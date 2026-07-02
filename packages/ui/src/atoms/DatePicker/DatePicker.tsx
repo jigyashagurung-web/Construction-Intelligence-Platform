@@ -1,4 +1,3 @@
-'use client'
 import * as React from 'react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'

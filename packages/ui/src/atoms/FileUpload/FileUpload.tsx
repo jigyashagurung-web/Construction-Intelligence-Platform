@@ -1,4 +1,3 @@
-'use client'
 import * as React from 'react'
 import { Upload, X, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react'
 import { cn } from '../../utils/cn'

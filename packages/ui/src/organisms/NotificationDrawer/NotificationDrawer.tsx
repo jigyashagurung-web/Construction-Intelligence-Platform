@@ -1,4 +1,3 @@
-'use client'
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Bell, X, Check, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react'
