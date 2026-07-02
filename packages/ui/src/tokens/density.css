@@ -1,0 +1,86 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   DENSITY TOKENS
+   Controlled by data-density on <html>. Components read --space-* and
+   --text-* from here — never hardcode px values inside component files.
+
+   compact     → dashboards, dense data tables
+   comfortable → default for all screens
+   spacious    → forms, mobile entry screens
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Comfortable (default) ── */
+:root,
+[data-density='comfortable'] {
+  --space-xs:  var(--primitive-space-2);   /* 8px  */
+  --space-sm:  var(--primitive-space-3);   /* 12px */
+  --space-md:  var(--primitive-space-4);   /* 16px */
+  --space-lg:  var(--primitive-space-6);   /* 24px */
+  --space-xl:  var(--primitive-space-8);   /* 32px */
+  --space-2xl: var(--primitive-space-12);  /* 48px */
+
+  --text-body:    var(--primitive-text-base); /* 16px */
+  --text-label:   var(--primitive-text-sm);   /* 14px */
+  --text-caption: var(--primitive-text-xs);   /* 12px */
+
+  --row-height:     3rem;    /* 48px — table rows */
+  --input-height:   2.5rem;  /* 40px */
+  --button-height:  2.5rem;
+  --nav-item-height:2.75rem; /* 44px */
+}
+
+/* ── Compact ── */
+[data-density='compact'] {
+  --space-xs:  var(--primitive-space-1);   /* 4px  */
+  --space-sm:  var(--primitive-space-2);   /* 8px  */
+  --space-md:  var(--primitive-space-3);   /* 12px */
+  --space-lg:  var(--primitive-space-4);   /* 16px */
+  --space-xl:  var(--primitive-space-6);   /* 24px */
+  --space-2xl: var(--primitive-space-8);   /* 32px */
+
+  --text-body:    var(--primitive-text-sm);   /* 14px */
+  --text-label:   var(--primitive-text-xs);   /* 12px */
+  --text-caption: var(--primitive-text-xs);
+
+  --row-height:     2.25rem;  /* 36px */
+  --input-height:   2rem;     /* 32px */
+  --button-height:  2rem;
+  --nav-item-height:2.25rem;
+}
+
+/* ── Spacious ── */
+[data-density='spacious'] {
+  --space-xs:  var(--primitive-space-3);   /* 12px */
+  --space-sm:  var(--primitive-space-4);   /* 16px */
+  --space-md:  var(--primitive-space-6);   /* 24px */
+  --space-lg:  var(--primitive-space-8);   /* 32px */
+  --space-xl:  var(--primitive-space-12);  /* 48px */
+  --space-2xl: var(--primitive-space-16);  /* 64px */
+
+  --text-body:    var(--primitive-text-md);   /* 18px */
+  --text-label:   var(--primitive-text-base); /* 16px */
+  --text-caption: var(--primitive-text-sm);   /* 14px */
+
+  --row-height:     3.5rem;  /* 56px */
+  --input-height:   3rem;    /* 48px */
+  --button-height:  3rem;
+  --nav-item-height:3rem;
+}
+
+/* ── Low-bandwidth mode ── */
+/* Triggered via NetworkInformation API or manually via data-low-bandwidth */
+[data-low-bandwidth='true'] {
+  --duration-fast:     0ms;
+  --duration-normal:   0ms;
+  --duration-moderate: 0ms;
+  --duration-slow:     0ms;
+}
+
+/* ── Reduced-motion (OS-level) ── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast:     0ms;
+    --duration-normal:   0ms;
+    --duration-moderate: 0ms;
+    --duration-slow:     0ms;
+  }
+}

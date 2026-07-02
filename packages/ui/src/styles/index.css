@@ -1,0 +1,9 @@
+/* CIP UI — full stylesheet bundle
+   Import order matters: primitive → semantic → component → density → utilities
+   Consumers: import '@cip/ui/dist/style.css' once in your app root */
+
+@import '../tokens/primitive.css';
+@import '../tokens/semantic.css';
+@import '../tokens/component.css';
+@import '../tokens/density.css';
+@import './globals.css';

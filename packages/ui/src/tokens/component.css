@@ -1,0 +1,81 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   TIER 3 — COMPONENT TOKENS
+   Scoped to individual components. Override these to retheme a single
+   component without touching global semantics.
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Button ── */
+  --button-primary-bg:          var(--color-action-primary);
+  --button-primary-bg-hover:    var(--color-action-primary-hover);
+  --button-primary-bg-active:   var(--color-action-primary-active);
+  --button-primary-text:        var(--color-action-primary-text);
+  --button-secondary-border:    var(--border-default);
+  --button-radius:               var(--primitive-radius-md);
+  --button-focus-ring:           var(--focus-ring);
+  --button-height-sm:            2rem;    /* 32px */
+  --button-height-md:            2.5rem;  /* 40px */
+  --button-height-lg:            3rem;    /* 48px */
+
+  /* ── Badge ── */
+  --badge-radius:  var(--primitive-radius-full);
+  --badge-font:    var(--primitive-text-xs);
+
+  /* ── Input ── */
+  --input-bg:            var(--surface-input);
+  --input-border:        var(--border-input);
+  --input-border-focus:  var(--border-focus);
+  --input-border-error:  var(--border-error);
+  --input-radius:        var(--primitive-radius-md);
+  --input-height:        2.5rem; /* 40px */
+  --input-height-sm:     2rem;
+  --input-height-lg:     3rem;
+  --input-text:          var(--text-primary);
+  --input-placeholder:   var(--text-tertiary);
+
+  /* ── Card ── */
+  --card-bg:     var(--surface-card);
+  --card-border: var(--border-default);
+  --card-radius: var(--primitive-radius-lg);
+  --card-shadow: var(--shadow-card);
+  --card-padding:var(--primitive-space-6);
+
+  /* ── MetricCard ── */
+  --metric-card-value-size: var(--primitive-text-3xl);
+  --metric-card-label-size: var(--primitive-text-sm);
+
+  /* ── Sidebar ── */
+  --sidebar-bg:          var(--surface-sidebar);
+  --sidebar-width:        240px;
+  --sidebar-width-icon:   64px;
+  --sidebar-item-height:  2.75rem; /* 44px */
+  --sidebar-active-bg:   rgba(255,255,255,0.10);
+  --sidebar-active-border: var(--primitive-blue-400);
+
+  /* ── Table ── */
+  --table-header-bg:   var(--surface-page);
+  --table-border:      var(--border-default);
+  --table-row-hover:   var(--surface-hover);
+  --table-stripe:      rgba(0,0,0,0.02);
+  --table-cell-height: 3rem; /* 48px */
+
+  /* ── Dialog / Modal ── */
+  --dialog-overlay-bg: rgba(0,0,0,0.50);
+  --dialog-bg:         var(--surface-overlay);
+  --dialog-radius:     var(--primitive-radius-xl);
+  --dialog-shadow:     var(--shadow-modal);
+  --dialog-padding:    var(--primitive-space-6);
+
+  /* ── Progress Ring ── */
+  --progress-ring-track:  var(--primitive-zinc-200);
+  --progress-ring-fill:   var(--color-action-primary);
+  --progress-ring-size-sm:  48px;
+  --progress-ring-size-md:  64px;
+  --progress-ring-size-lg:  96px;
+
+  /* ── Toast / Notification ── */
+  --toast-bg:     var(--surface-card);
+  --toast-border: var(--border-default);
+  --toast-shadow: var(--shadow-raised);
+  --toast-radius: var(--primitive-radius-lg);
+}

@@ -1,0 +1,145 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   TIER 2 — SEMANTIC TOKENS
+   Maps primitive values to roles. These are what components reference.
+   Overridden in dark.css for dark mode.
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Surfaces ── */
+  --surface-page:      var(--primitive-zinc-50);
+  --surface-card:      var(--primitive-zinc-0);
+  --surface-overlay:   var(--primitive-zinc-0);
+  --surface-sidebar:   var(--primitive-blue-900);
+  --surface-header:    var(--primitive-blue-950);
+  --surface-input:     var(--primitive-zinc-100);
+  --surface-hover:     var(--primitive-zinc-100);
+  --surface-active:    var(--primitive-zinc-200);
+  --surface-selected:  var(--primitive-blue-50);
+  --surface-disabled:  var(--primitive-zinc-100);
+
+  /* ── Text ── */
+  --text-primary:   var(--primitive-zinc-800);
+  --text-secondary: var(--primitive-zinc-500);
+  --text-tertiary:  var(--primitive-zinc-400);
+  --text-disabled:  var(--primitive-zinc-400);
+  --text-inverse:   var(--primitive-zinc-0);
+  --text-link:      var(--primitive-blue-600);
+  --text-link-hover:var(--primitive-blue-700);
+  --text-on-sidebar:rgba(255, 255, 255, 0.7);
+  --text-on-sidebar-active: var(--primitive-zinc-0);
+
+  /* ── Borders ── */
+  --border-default: var(--primitive-zinc-200);
+  --border-strong:  var(--primitive-zinc-300);
+  --border-focus:   var(--primitive-blue-500);
+  --border-error:   var(--primitive-red-500);
+  --border-input:   var(--primitive-zinc-300);
+
+  /* ── Action (interactive elements) ── */
+  --color-action-primary:        var(--primitive-blue-600);
+  --color-action-primary-hover:  var(--primitive-blue-700);
+  --color-action-primary-active: var(--primitive-blue-800);
+  --color-action-primary-text:   var(--primitive-zinc-0);
+
+  /* ── Status ── */
+  --color-success-bg:   var(--primitive-green-50);
+  --color-success-text: var(--primitive-green-700);
+  --color-success-icon: var(--primitive-green-500);
+  --color-success-border: var(--primitive-green-200);
+
+  --color-warning-bg:   var(--primitive-amber-50);
+  --color-warning-text: var(--primitive-amber-700);
+  --color-warning-icon: var(--primitive-amber-500);
+  --color-warning-border: var(--primitive-amber-200);
+
+  --color-danger-bg:    var(--primitive-red-50);
+  --color-danger-text:  var(--primitive-red-700);
+  --color-danger-icon:  var(--primitive-red-500);
+  --color-danger-border:var(--primitive-red-200);
+  --color-danger-600:   var(--primitive-red-600);
+  --color-danger-700:   var(--primitive-red-700);
+
+  --color-info-bg:   var(--primitive-sky-50);
+  --color-info-text: var(--primitive-sky-700);
+  --color-info-icon: var(--primitive-sky-500);
+  --color-info-border: var(--primitive-sky-100);
+
+  /* ── Construction progress bands ── */
+  --progress-0-25:   var(--primitive-red-500);
+  --progress-26-50:  var(--primitive-amber-500);
+  --progress-51-75:  var(--primitive-sky-500);
+  --progress-76-99:  var(--primitive-blue-500);
+  --progress-100:    var(--primitive-green-500);
+
+  /* ── Trade colours ── */
+  --trade-masonry:  #92400E;
+  --trade-concrete: #1E40AF;
+  --trade-steel:    #374151;
+  --trade-mep:      #065F46;
+  --trade-finishing:#6D28D9;
+  --trade-earthwork:#78350F;
+
+  /* ── Safety severity ── */
+  --safety-critical:    var(--primitive-red-600);
+  --safety-major:       var(--primitive-amber-600);
+  --safety-minor:       var(--primitive-sky-600);
+  --safety-observation: var(--primitive-zinc-500);
+
+  /* ── Typography (semantic aliases) ── */
+  --font-sans: var(--primitive-font-sans);
+  --font-mono: var(--primitive-font-mono);
+
+  /* ── Motion (semantic aliases) ── */
+  --duration-fast:     var(--primitive-duration-fast);
+  --duration-normal:   var(--primitive-duration-normal);
+  --duration-moderate: var(--primitive-duration-moderate);
+  --duration-slow:     var(--primitive-duration-slow);
+  --ease-out:          var(--primitive-ease-out);
+  --ease-in-out:       var(--primitive-ease-in-out);
+  --ease-spring:       var(--primitive-ease-spring);
+
+  /* ── Focus ring ── */
+  --focus-ring: 0 0 0 3px var(--primitive-blue-200);
+
+  /* ── Elevation ── */
+  --shadow-card:   var(--primitive-shadow-1);
+  --shadow-panel:  var(--primitive-shadow-2);
+  --shadow-raised: var(--primitive-shadow-3);
+  --shadow-modal:  var(--primitive-shadow-4);
+}
+
+/* ── Dark mode overrides ── */
+[data-theme='dark'] {
+  --surface-page:     #09090B;
+  --surface-card:     #18181B;
+  --surface-overlay:  #18181B;
+  --surface-input:    #27272A;
+  --surface-hover:    #27272A;
+  --surface-active:   #3F3F46;
+  --surface-selected: rgba(37, 99, 235, 0.15);
+  --surface-disabled: #1C1C1F;
+
+  --text-primary:   #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-tertiary:  #71717A;
+  --text-disabled:  #52525B;
+
+  --border-default: #3F3F46;
+  --border-strong:  #52525B;
+  --border-input:   #52525B;
+
+  --color-action-primary:       #3B82F6;
+  --color-action-primary-hover: #2563EB;
+
+  --color-danger-600: #EF4444;
+  --color-danger-700: #DC2626;
+}
+
+/* ── High contrast overrides ── */
+[data-theme='high-contrast'] {
+  --text-primary:        #000000;
+  --surface-page:        #FFFFFF;
+  --border-default:      #000000;
+  --color-action-primary: #0000EE;
+  --border-focus:         #FF0000;
+}
