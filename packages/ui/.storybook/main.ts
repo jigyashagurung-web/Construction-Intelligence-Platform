@@ -2,7 +2,6 @@ import type { StorybookConfig } from '@storybook/react-vite'
 
 const config: StorybookConfig = {
   stories: [
-    '../src/docs/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
   ],
 
@@ -10,6 +9,7 @@ const config: StorybookConfig = {
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
     '@storybook/addon-viewport',
+    '@storybook/addon-actions',
     '@storybook/addon-interactions',
     '@chromatic-com/storybook',
   ],
@@ -40,6 +40,10 @@ const config: StorybookConfig = {
           (await import('autoprefixer')).default,
         ],
       },
+    }
+    config.build = {
+      ...config.build,
+      chunkSizeWarningLimit: 1000,
     }
     return config
   },
