@@ -5,8 +5,10 @@
   "scripts": {
     "storybook":       "npm run storybook -w packages/ui",
     "build-storybook": "npm run build-storybook -w packages/ui",
-    "dev":             "npm run storybook",
+    "dev":             "npm run dev -w packages/app",
+    "dev:storybook":   "npm run storybook -w packages/ui",
     "build":           "npm run build -w packages/ui",
+    "build:app":       "npm run build -w packages/app",
     "test":            "npm run test -w packages/ui"
   },
   "devDependencies": {
