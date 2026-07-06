@@ -60,6 +60,7 @@ export const NoFilters: Story = {
 
 export const Chips: Story = {
   name: 'FilterChip standalone',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
       <FilterChip id="a" label="Status"   value="At risk"      onRemove={() => {}} />
@@ -102,6 +103,7 @@ const COLS = [
 
 export const WithDataTable: Story = {
   name: 'FilterBar + DataTable (interactive)',
+  args: {} as any,
   render: () => {
     const [statusFilter, setStatusFilter] = useState('')
     const [tradeFilter,  setTradeFilter]  = useState('')

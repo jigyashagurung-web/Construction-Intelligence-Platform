@@ -99,6 +99,7 @@ export const Compact: Story = {
 
 export const AllCIPPages: Story = {
   name: 'CIP page headers gallery',
+  args: {} as any,
   render: () => {
     const pages = [
       { title: 'Dashboard',      description: 'Baneshwor Commercial Complex — overview',                   badge: <Badge variant="primary" dot size="sm">On track</Badge>    },

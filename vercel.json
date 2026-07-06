@@ -1,7 +1,6 @@
 {
-  "rootDirectory": "packages/ui",
   "buildCommand": "npm run build-storybook",
-  "outputDirectory": "storybook-static",
+  "outputDirectory": "packages/ui/storybook-static",
   "installCommand": "npm install",
   "framework": null
 }

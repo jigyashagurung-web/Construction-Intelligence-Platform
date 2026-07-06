@@ -129,9 +129,9 @@ export const ErrorState: Story = {
 
 export const MaterialRequisition: Story = {
   name: 'Material requisition (interactive)',
+  args: {} as any,
   render: () => {
     const [material, setMaterial] = useState('')
-    const [unit, setUnit]         = useState('')
 
     return (
       <div style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>

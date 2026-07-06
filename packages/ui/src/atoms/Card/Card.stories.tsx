@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { TrendingUp, AlertTriangle, MapPin, Calendar, Users } from 'lucide-react'
+import { TrendingUp, AlertTriangle, MapPin, Users } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardBody, CardFooter } from './Card'
 import { Badge }       from '../Badge'
 import { Button }      from '../Button'
@@ -20,6 +20,7 @@ type Story = StoryObj<typeof meta>
 
 export const Variants: Story = {
   name: 'Variants',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px' }}>
       {(['default', 'flat', 'elevated'] as const).map((variant) => (
@@ -42,6 +43,7 @@ export const Variants: Story = {
 
 export const WithHeaderFooter: Story = {
   name: 'With header + footer',
+  args: {} as any,
   render: () => (
     <Card style={{ maxWidth: '420px' }}>
       <CardHeader bordered>
@@ -64,6 +66,7 @@ export const WithHeaderFooter: Story = {
 
 export const ProjectCard: Story = {
   name: 'Project card (CIP)',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
       {[
@@ -121,6 +124,7 @@ export const ProjectCard: Story = {
 
 export const KPIGrid: Story = {
   name: 'KPI grid inside cards',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', maxWidth: '600px' }}>
       <Card>

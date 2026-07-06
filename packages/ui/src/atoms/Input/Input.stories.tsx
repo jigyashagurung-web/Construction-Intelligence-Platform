@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, within, userEvent } from '@storybook/test'
-import { Search, MapPin, Package, Calendar, DollarSign } from 'lucide-react'
+import { Search, MapPin, Package, Calendar } from 'lucide-react'
 import { Input } from './Input'
 
 const meta = {
@@ -149,6 +149,7 @@ export const WithBothAdornments: Story = {
 
 export const Sizes: Story = {
   name: 'All Sizes',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '320px' }}>
       <Input size="sm" label="Small"  placeholder="Small input" />
@@ -162,6 +163,7 @@ export const Sizes: Story = {
 
 export const ConstructionFields: Story = {
   name: '📐 Construction Use Cases',
+  args: {} as any,
   parameters: {
     docs: {
       description: {

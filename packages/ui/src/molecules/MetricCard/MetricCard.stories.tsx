@@ -116,6 +116,7 @@ export const FlatTrend: Story = {
 
 export const DashboardGrid: Story = {
   name: '📐 Project Dashboard Grid',
+  args: {} as any,
   decorators: [(Story) => <Story />],
   parameters: {
     layout: 'padded',
@@ -187,6 +188,7 @@ export const DashboardGrid: Story = {
 
 export const LoadingGrid: Story = {
   name: 'Loading State Grid',
+  args: {} as any,
   decorators: [(Story) => <Story />],
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 220px)', gap: '16px' }}>

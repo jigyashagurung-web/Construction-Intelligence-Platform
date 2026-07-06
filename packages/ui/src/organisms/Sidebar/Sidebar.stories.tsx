@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   LayoutDashboard, FolderKanban, FileSpreadsheet, Package,
@@ -81,6 +81,7 @@ type Story = StoryObj<typeof meta>
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const Expanded: Story = {
+  args: {} as any,
   render: () => (
     <div style={{ height: '100vh', display: 'flex' }}>
       <Sidebar
@@ -93,6 +94,7 @@ export const Expanded: Story = {
 }
 
 export const Collapsed: Story = {
+  args: {} as any,
   render: () => (
     <div style={{ height: '100vh', display: 'flex' }}>
       <Sidebar
@@ -107,6 +109,7 @@ export const Collapsed: Story = {
 
 export const WithActiveProject: Story = {
   name: 'Active — Deep Page',
+  args: {} as any,
   render: () => (
     <div style={{ height: '100vh', display: 'flex' }}>
       <Sidebar
@@ -120,6 +123,7 @@ export const WithActiveProject: Story = {
 
 export const Interactive: Story = {
   name: 'Interactive (toggle collapse)',
+  args: {} as any,
   render: () => {
     const [collapsed, setCollapsed] = useState(false)
     const [activeId, setActiveId]   = useState('dashboard')

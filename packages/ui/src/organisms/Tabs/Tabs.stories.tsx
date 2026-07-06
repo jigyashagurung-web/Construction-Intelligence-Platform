@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  FileSpreadsheet, BarChart3, Clock, AlertTriangle,
+  BarChart3, Clock, AlertTriangle,
   TrendingUp, Package, Plus,
 } from 'lucide-react'
 import { Tabs } from './Tabs'

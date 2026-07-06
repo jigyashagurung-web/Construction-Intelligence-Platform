@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   LayoutDashboard, FolderKanban, FileSpreadsheet, Package,
   ClipboardList, Warehouse, BarChart3, TrendingUp, Sparkles,
   Settings2, Users, ShieldCheck,
-  TrendingDown, AlertTriangle, CalendarClock, DollarSign, Truck,
+  AlertTriangle, CalendarClock, DollarSign, Truck,
 } from 'lucide-react'
 import { AppShell }    from './AppShell'
 import { MetricCard }  from '../../molecules/MetricCard'
@@ -184,6 +184,7 @@ type Story = StoryObj<typeof meta>
 
 export const ProjectDashboard: Story = {
   name: '📐 Project Dashboard (full layout)',
+  args: {} as any,
   render: () => {
     const [activeId, setActiveId] = useState('dashboard')
     const [activeProject, setActiveProject] = useState(PROJECTS[0])
@@ -227,6 +228,7 @@ export const ProjectDashboard: Story = {
 
 export const OfflineMode: Story = {
   name: 'Offline Mode',
+  args: {} as any,
   render: () => (
     <div style={{ height: '100vh' }}>
       <AppShell

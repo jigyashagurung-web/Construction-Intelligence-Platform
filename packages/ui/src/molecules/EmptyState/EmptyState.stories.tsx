@@ -46,6 +46,7 @@ export const ErrorState: Story = {
 
 export const Sizes: Story = {
   name: 'Sizes: sm / md / lg',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0', border: '1px solid var(--border-default)', borderRadius: '12px', overflow: 'hidden' }}>
       {(['sm', 'md', 'lg'] as const).map((size, i, arr) => (
@@ -60,6 +61,7 @@ export const Sizes: Story = {
 
 export const CIPScenarios: Story = {
   name: 'CIP scenarios',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
       <div style={{ border: '1px solid var(--border-default)', borderRadius: '12px', overflow: 'hidden', background: 'var(--surface-card)' }}>

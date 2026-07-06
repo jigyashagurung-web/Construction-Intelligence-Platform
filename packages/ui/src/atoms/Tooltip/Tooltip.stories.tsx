@@ -27,6 +27,7 @@ export const Default: Story = {
 
 export const Sides: Story = {
   name: 'All Sides',
+  args: {} as any,
   render: () => (
     <TooltipProvider>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '40px' }}>
@@ -42,6 +43,7 @@ export const Sides: Story = {
 
 export const IconTrigger: Story = {
   name: 'Icon Trigger (collapsed sidebar pattern)',
+  args: {} as any,
   render: () => (
     <TooltipProvider>
       <Tooltip content="Daily Progress" side="right">

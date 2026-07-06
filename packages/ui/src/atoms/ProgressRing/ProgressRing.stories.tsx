@@ -51,6 +51,7 @@ export const Critical: Story = {
 
 export const Sizes: Story = {
   name: 'All Sizes',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
       <ProgressRing value={72} size="sm" description="Small ring" />
@@ -64,6 +65,7 @@ export const Sizes: Story = {
 
 export const ColourScale: Story = {
   name: '5-Band Colour Scale',
+  args: {} as any,
   parameters: {
     docs: {
       description: {
@@ -87,6 +89,7 @@ export const ColourScale: Story = {
 
 export const CustomLabel: Story = {
   name: 'Custom Centre Label',
+  args: {} as any,
   render: () => (
     <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
       <ProgressRing value={78} size="lg" label="78%" description="Budget consumed" />
@@ -100,6 +103,7 @@ export const CustomLabel: Story = {
 
 export const ConstructionUseCases: Story = {
   name: '📐 Dashboard Use Cases',
+  args: {} as any,
   parameters: {
     docs: {
       description: {
