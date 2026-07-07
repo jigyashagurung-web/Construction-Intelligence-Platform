@@ -35,6 +35,20 @@ export function ProjectListPage() {
     },
   })
 
+  if (!profile?.org_id) {
+    return (
+      <div className="p-6 max-w-lg mx-auto mt-12 text-center">
+        <p className="text-sm font-medium text-red-600 mb-2">Account not linked to an organisation.</p>
+        <p className="text-xs text-gray-500">
+          Run this in your Supabase SQL Editor, then sign out and back in:
+        </p>
+        <pre className="mt-3 text-left text-xs bg-gray-900 text-green-400 rounded-lg px-4 py-3 overflow-x-auto">
+          {`update profiles\nset org_id = '00000000-0000-0000-0000-000000000001',\n    role = 'admin';`}
+        </pre>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
