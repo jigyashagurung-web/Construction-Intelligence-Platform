@@ -52,6 +52,28 @@ export interface BOQItem {
   updated_at: string
 }
 
+export type ActivityStatus = 'not_started' | 'on_track' | 'at_risk' | 'delayed' | 'complete'
+
+export interface Activity {
+  id: string
+  project_id: string
+  boq_item_id: string | null
+  wbs_code: string | null
+  name: string
+  trade: string | null
+  planned_start: string
+  planned_end: string
+  actual_start: string | null
+  actual_end: string | null
+  progress: number
+  status: ActivityStatus
+  is_critical: boolean
+  assignee: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Material {
   id: string
   org_id: string

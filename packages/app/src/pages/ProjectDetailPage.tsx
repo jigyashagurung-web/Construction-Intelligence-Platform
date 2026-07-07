@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader2, MapPin, CalendarDays, DollarSign,
-  ClipboardList, Package, BarChart3
+  ClipboardList, Package, BarChart3, GanttChartSquare
 } from 'lucide-react'
 import { fetchProject } from '@/api/projects'
 import type { ProjectStatus } from '@/types'
@@ -96,7 +96,14 @@ export function ProjectDetailPage() {
       </div>
 
       {/* Module cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ModuleCard
+          to={`/projects/${projectId}/schedule`}
+          icon={<GanttChartSquare size={20} className="text-indigo-600" />}
+          title="Activity Schedule"
+          description="Gantt view, baseline vs actual, critical path"
+          bg="bg-indigo-50"
+        />
         <ModuleCard
           to={`/projects/${projectId}/boq`}
           icon={<ClipboardList size={20} className="text-blue-600" />}
