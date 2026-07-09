@@ -12,9 +12,10 @@ where org_id is null;
 -- Fix 2: Auto-assign org + admin role on every new signup
 -- =====================================================================
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public as $$
 begin
-  insert into profiles (id, full_name, org_id, role)
+  insert into public.profiles (id, full_name, org_id, role)
   values (
     new.id,
     new.raw_user_meta_data->>'full_name',
