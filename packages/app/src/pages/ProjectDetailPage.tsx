@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader2, MapPin, CalendarDays, DollarSign,
-  ClipboardList, Package, BarChart3, GanttChartSquare
+  ClipboardList, Package, BarChart3, GanttChartSquare, NotebookPen
 } from 'lucide-react'
 import { fetchProject } from '@/api/projects'
 import type { ProjectStatus } from '@/types'
@@ -117,6 +117,13 @@ export function ProjectDetailPage() {
           title="Materials"
           description="Track stock, record GRNs, and manage issues"
           bg="bg-green-50"
+        />
+        <ModuleCard
+          to={`/projects/${projectId}/progress`}
+          icon={<NotebookPen size={20} className="text-orange-600" />}
+          title="Daily Progress"
+          description="Site diary — labour, equipment, and work logged daily"
+          bg="bg-orange-50"
         />
         <ModuleCard
           to="#"

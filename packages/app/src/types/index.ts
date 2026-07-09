@@ -74,6 +74,24 @@ export interface Activity {
   updated_at: string
 }
 
+export type Weather = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'foggy'
+
+export interface DailyProgressEntry {
+  id: string
+  project_id: string
+  activity_id: string | null
+  entry_date: string
+  weather: Weather | null
+  labour_count: number
+  equipment_count: number
+  work_done: string
+  issues: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  activity?: Activity
+}
+
 export interface Material {
   id: string
   org_id: string
