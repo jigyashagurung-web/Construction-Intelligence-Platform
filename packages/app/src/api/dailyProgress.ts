@@ -13,11 +13,12 @@ export async function fetchDailyProgress(projectId: string): Promise<DailyProgre
 
 export interface CreateDailyProgressInput {
   project_id: string
-  activity_id?: string
+  activity_id: string
   entry_date: string
   weather?: Weather
   labour_count?: number
   equipment_count?: number
+  quantity_consumed: number
   work_done: string
   issues?: string
 }

@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Loader2, Pencil, Trash2, X, GanttChartSquare,
-  List, TrendingUp, CheckCircle2, Clock, AlertTriangle, ChevronDown,
+  List, TrendingUp, CheckCircle2, Clock, AlertTriangle, ChevronDown, Lock,
 } from 'lucide-react'
 import {
   fetchActivities, createActivity, updateActivity, deleteActivity,
 } from '@/api/activities'
 import { fetchProject } from '@/api/projects'
+import { fetchBOQItems } from '@/api/boq'
 import { useAuthStore } from '@/store/authStore'
-import type { Activity, ActivityStatus } from '@/types'
+import type { Activity, ActivityStatus, BOQItem } from '@/types'
 
 // Mirrors the role checks in the activities RLS policies
 // (supabase/migrations/004_activities.sql) — keep in sync.
@@ -59,6 +60,12 @@ export function ActivitySchedulePage() {
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ['activities', projectId],
     queryFn: () => fetchActivities(projectId!),
+    enabled: !!projectId,
+  })
+
+  const { data: boqItems = [] } = useQuery({
+    queryKey: ['boq_items', projectId],
+    queryFn: () => fetchBOQItems(projectId!),
     enabled: !!projectId,
   })
 
@@ -214,6 +221,7 @@ export function ActivitySchedulePage() {
           mode={dialog}
           initial={editing}
           projectId={projectId!}
+          boqItems={boqItems}
           onClose={() => { setDialog(null); setEditing(null) }}
           onSubmit={(data) => {
             if (dialog === 'edit' && editing) {
@@ -299,7 +307,13 @@ function GanttView({
                 </div>
               </div>
               <div className="w-16 flex-shrink-0 pr-3 text-right">
-                <span className={`text-xs font-semibold ${a.status === 'not_started' ? 'text-gray-400' : 'text-gray-700'}`}>{a.progress}%</span>
+                <span
+                  className={`text-xs font-semibold inline-flex items-center gap-1 justify-end ${a.status === 'not_started' ? 'text-gray-400' : 'text-gray-700'}`}
+                  title={a.boq_item_id ? 'Auto-calculated from logged Quantity Consumed' : undefined}
+                >
+                  {a.boq_item_id && <Lock size={9} className="text-gray-400" />}
+                  {a.progress}%
+                </span>
               </div>
             </button>
           )
@@ -355,7 +369,13 @@ function TableView({
                   <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <div className={`h-full ${cfg.bar}`} style={{ width: `${a.progress}%` }} />
                   </div>
-                  <span className="text-xs font-medium text-gray-600 w-9 text-right">{a.progress}%</span>
+                  <span
+                    className="text-xs font-medium text-gray-600 w-12 text-right inline-flex items-center gap-1 justify-end"
+                    title={a.boq_item_id ? 'Auto-calculated from logged Quantity Consumed' : undefined}
+                  >
+                    {a.boq_item_id && <Lock size={9} className="text-gray-400" />}
+                    {a.progress}%
+                  </span>
                 </div>
               </td>
               <td className="px-4 py-2.5">
@@ -396,16 +416,18 @@ interface ActivityDialogProps {
   mode: 'add' | 'edit'
   initial: Activity | null
   projectId: string
+  boqItems: BOQItem[]
   onClose: () => void
   onSubmit: (data: {
     wbs_code?: string
     name: string
     trade?: string
+    boq_item_id?: string
     planned_start: string
     planned_end: string
     actual_start?: string
     actual_end?: string
-    progress: number
+    progress?: number
     status: ActivityStatus
     is_critical: boolean
     assignee?: string
@@ -414,10 +436,11 @@ interface ActivityDialogProps {
   error: string | null
 }
 
-function ActivityDialog({ mode, initial, onClose, onSubmit, loading, error }: ActivityDialogProps) {
+function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, error }: ActivityDialogProps) {
   const [wbs, setWbs]           = useState(initial?.wbs_code ?? '')
   const [name, setName]         = useState(initial?.name ?? '')
   const [trade, setTrade]       = useState(initial?.trade ?? '')
+  const [boqItemId, setBoqItemId] = useState(initial?.boq_item_id ?? '')
   const [plannedStart, setPlannedStart] = useState(initial?.planned_start ?? '')
   const [plannedEnd, setPlannedEnd]     = useState(initial?.planned_end ?? '')
   const [actualStart, setActualStart]   = useState(initial?.actual_start ?? '')
@@ -433,11 +456,15 @@ function ActivityDialog({ mode, initial, onClose, onSubmit, loading, error }: Ac
       wbs_code: wbs || undefined,
       name,
       trade: trade || undefined,
+      boq_item_id: boqItemId || undefined,
       planned_start: plannedStart,
       planned_end: plannedEnd,
       actual_start: actualStart || undefined,
       actual_end: actualEnd || undefined,
-      progress: Number(progress),
+      // Progress is derived automatically from logged Quantity Consumed for
+      // BOQ-linked activities (see 007_quantity_consumed.sql) — don't send a
+      // manual value that would stomp the trigger's computed number.
+      progress: boqItemId ? undefined : Number(progress),
       status,
       is_critical: isCritical,
       assignee: assignee || undefined,
@@ -466,6 +493,22 @@ function ActivityDialog({ mode, initial, onClose, onSubmit, loading, error }: Ac
               </select>
             </Field>
           </div>
+
+          <Field label="BOQ Item">
+            <select className={inp} value={boqItemId} onChange={(e) => setBoqItemId(e.target.value)}>
+              <option value="">— None —</option>
+              {boqItems.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.wbs_code ? `${b.wbs_code} — ` : ''}{b.description} ({b.quantity} {b.unit ?? ''})
+                </option>
+              ))}
+            </select>
+            {boqItemId && (
+              <p className="text-xs text-gray-400 mt-1">
+                Linking a BOQ item makes Progress auto-calculated from logged Quantity Consumed.
+              </p>
+            )}
+          </Field>
 
           <Field label="Activity name *">
             <input
@@ -497,10 +540,19 @@ function ActivityDialog({ mode, initial, onClose, onSubmit, loading, error }: Ac
 
           <div className="grid grid-cols-3 gap-3">
             <Field label="Progress (%)">
-              <input
-                type="number" min="0" max="100" className={inp}
-                value={progress} onChange={(e) => setProgress(e.target.value)}
-              />
+              {boqItemId ? (
+                <div
+                  className={`${inp} bg-gray-50 text-gray-500 flex items-center`}
+                  title="Auto-calculated from logged Quantity Consumed — not editable while a BOQ Item is linked."
+                >
+                  {initial?.boq_item_id === boqItemId ? initial.progress : 0}% (auto)
+                </div>
+              ) : (
+                <input
+                  type="number" min="0" max="100" className={inp}
+                  value={progress} onChange={(e) => setProgress(e.target.value)}
+                />
+              )}
             </Field>
             <Field label="Status">
               <select className={inp} value={status} onChange={(e) => setStatusVal(e.target.value as ActivityStatus)}>

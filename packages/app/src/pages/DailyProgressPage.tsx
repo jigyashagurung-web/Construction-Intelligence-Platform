@@ -11,7 +11,8 @@ import {
 } from '@/api/dailyProgress'
 import { fetchActivities } from '@/api/activities'
 import { fetchProject } from '@/api/projects'
-import type { DailyProgressEntry, Weather } from '@/types'
+import { fetchBOQItems } from '@/api/boq'
+import type { Activity, BOQItem, DailyProgressEntry, Weather } from '@/types'
 
 const WEATHER_OPTS: Weather[] = ['sunny', 'cloudy', 'rainy', 'stormy', 'foggy']
 
@@ -43,6 +44,12 @@ export function DailyProgressPage() {
   const { data: activities = [] } = useQuery({
     queryKey: ['activities', projectId],
     queryFn: () => fetchActivities(projectId!),
+    enabled: !!projectId,
+  })
+
+  const { data: boqItems = [] } = useQuery({
+    queryKey: ['boq_items', projectId],
+    queryFn: () => fetchBOQItems(projectId!),
     enabled: !!projectId,
   })
 
@@ -160,6 +167,7 @@ export function DailyProgressPage() {
                 <th className="px-4 py-2.5 text-left w-24">Weather</th>
                 <th className="px-4 py-2.5 text-right w-20">Labour</th>
                 <th className="px-4 py-2.5 text-right w-24">Equipment</th>
+                <th className="px-4 py-2.5 text-right w-28">Qty Consumed</th>
                 <th className="px-4 py-2.5 text-left">Work Done</th>
                 <th className="px-4 py-2.5 text-left">Issues</th>
                 <th className="px-4 py-2.5 w-16" />
@@ -180,6 +188,9 @@ export function DailyProgressPage() {
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{e.labour_count}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{e.equipment_count}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">
+                    {e.quantity_consumed} {boqItems.find((b) => b.id === e.activity?.boq_item_id)?.unit ?? ''}
+                  </td>
                   <td className="px-4 py-2.5 text-gray-600 text-xs max-w-xs">{e.work_done}</td>
                   <td className="px-4 py-2.5 text-xs max-w-xs">
                     {e.issues ? <span className="text-red-500">{e.issues}</span> : <span className="text-gray-300">—</span>}
@@ -207,6 +218,7 @@ export function DailyProgressPage() {
           mode={dialog}
           initial={editing}
           activities={activities}
+          boqItems={boqItems}
           onClose={() => { setDialog(null); setEditing(null) }}
           onSubmit={(data) => {
             if (dialog === 'edit' && editing) {
@@ -239,14 +251,16 @@ function Kpi({ label, value, icon, warn }: { label: string; value: string | numb
 interface EntryDialogProps {
   mode: 'add' | 'edit'
   initial: DailyProgressEntry | null
-  activities: { id: string; name: string }[]
+  activities: Activity[]
+  boqItems: BOQItem[]
   onClose: () => void
   onSubmit: (data: {
-    activity_id?: string
+    activity_id: string
     entry_date: string
     weather?: Weather
     labour_count: number
     equipment_count: number
+    quantity_consumed: number
     work_done: string
     issues?: string
   }) => void
@@ -254,23 +268,28 @@ interface EntryDialogProps {
   error: string | null
 }
 
-function EntryDialog({ mode, initial, activities, onClose, onSubmit, loading, error }: EntryDialogProps) {
+function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, loading, error }: EntryDialogProps) {
   const [activityId, setActivityId] = useState(initial?.activity_id ?? '')
   const [entryDate, setEntryDate]   = useState(initial?.entry_date ?? today())
   const [weather, setWeather]       = useState<Weather | ''>(initial?.weather ?? '')
   const [labour, setLabour]         = useState(String(initial?.labour_count ?? '0'))
   const [equipment, setEquipment]   = useState(String(initial?.equipment_count ?? '0'))
+  const [quantityConsumed, setQuantityConsumed] = useState(String(initial?.quantity_consumed ?? ''))
   const [workDone, setWorkDone]     = useState(initial?.work_done ?? '')
   const [issues, setIssues]         = useState(initial?.issues ?? '')
+
+  const selectedActivity = activities.find((a) => a.id === activityId)
+  const consumptionUnit = boqItems.find((b) => b.id === selectedActivity?.boq_item_id)?.unit
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     onSubmit({
-      activity_id: activityId || undefined,
+      activity_id: activityId,
       entry_date: entryDate,
       weather: weather || undefined,
       labour_count: Number(labour),
       equipment_count: Number(equipment),
+      quantity_consumed: Number(quantityConsumed),
       work_done: workDone,
       issues: issues || undefined,
     })
@@ -291,9 +310,9 @@ function EntryDialog({ mode, initial, activities, onClose, onSubmit, loading, er
             <Field label="Date *">
               <input type="date" className={inp} value={entryDate} onChange={(e) => setEntryDate(e.target.value)} required />
             </Field>
-            <Field label="Activity">
-              <select className={inp} value={activityId} onChange={(e) => setActivityId(e.target.value)}>
-                <option value="">— None —</option>
+            <Field label="Activity *">
+              <select className={inp} value={activityId} onChange={(e) => setActivityId(e.target.value)} required>
+                <option value="" disabled>— Select an activity —</option>
                 {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </Field>
@@ -313,6 +332,15 @@ function EntryDialog({ mode, initial, activities, onClose, onSubmit, loading, er
               <input type="number" min="0" className={inp} value={equipment} onChange={(e) => setEquipment(e.target.value)} />
             </Field>
           </div>
+
+          <Field label={`Quantity Consumed *${consumptionUnit ? ` (${consumptionUnit})` : ''}`}>
+            <input
+              type="number" min="0" step="0.01" className={inp}
+              value={quantityConsumed} onChange={(e) => setQuantityConsumed(e.target.value)}
+              placeholder={consumptionUnit ? `Amount in ${consumptionUnit}` : 'Amount'}
+              required
+            />
+          </Field>
 
           <Field label="Work done *">
             <textarea

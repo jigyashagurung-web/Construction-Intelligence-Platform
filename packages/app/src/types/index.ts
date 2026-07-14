@@ -10,6 +10,7 @@ export interface Profile {
   id: string
   org_id: string | null
   full_name: string | null
+  email: string | null
   role: 'admin' | 'project_manager' | 'site_engineer' | 'qty_surveyor' | 'viewer'
   avatar_url: string | null
   created_at: string
@@ -79,11 +80,12 @@ export type Weather = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'foggy'
 export interface DailyProgressEntry {
   id: string
   project_id: string
-  activity_id: string | null
+  activity_id: string
   entry_date: string
   weather: Weather | null
   labour_count: number
   equipment_count: number
+  quantity_consumed: number
   work_done: string
   issues: string | null
   created_by: string | null
