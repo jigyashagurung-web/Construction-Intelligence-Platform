@@ -9,7 +9,14 @@ import {
   fetchActivities, createActivity, updateActivity, deleteActivity,
 } from '@/api/activities'
 import { fetchProject } from '@/api/projects'
+import { useAuthStore } from '@/store/authStore'
 import type { Activity, ActivityStatus } from '@/types'
+
+// Mirrors the role checks in the activities RLS policies
+// (supabase/migrations/004_activities.sql) — keep in sync.
+const CAN_CREATE_ROLES = ['admin', 'project_manager', 'qty_surveyor']
+const CAN_UPDATE_ROLES = ['admin', 'project_manager', 'qty_surveyor', 'site_engineer']
+const CAN_DELETE_ROLES = ['admin', 'project_manager']
 
 const STATUS_OPTS: ActivityStatus[] = ['not_started', 'on_track', 'at_risk', 'delayed', 'complete']
 
@@ -32,6 +39,10 @@ export function ActivitySchedulePage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const profile = useAuthStore((s) => s.profile)
+  const canCreate = !!profile && CAN_CREATE_ROLES.includes(profile.role)
+  const canUpdate = !!profile && CAN_UPDATE_ROLES.includes(profile.role)
+  const canDelete = !!profile && CAN_DELETE_ROLES.includes(profile.role)
 
   const [view, setView]           = useState<'gantt' | 'table'>('gantt')
   const [tradeFilter, setTrade]   = useState('All')
@@ -82,11 +93,13 @@ export function ActivitySchedulePage() {
     : 0
 
   function openEdit(a: Activity) {
+    if (!canUpdate) return
     setEditing(a)
     setDialog('edit')
   }
 
   function handleDelete(id: string) {
+    if (!canDelete) return
     if (confirm('Delete this activity?')) deleteMut.mutate(id)
   }
 
@@ -114,7 +127,9 @@ export function ActivitySchedulePage() {
           </div>
           <button
             onClick={() => { setEditing(null); setDialog('add') }}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors"
+            disabled={!canCreate}
+            title={canCreate ? undefined : "Your role can't create activities — ask an admin or PM."}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors"
           >
             <Plus size={15} />
             Add Activity
@@ -187,9 +202,9 @@ export function ActivitySchedulePage() {
             </p>
           </div>
         ) : view === 'gantt' ? (
-          <GanttView activities={filtered} onRowClick={openEdit} />
+          <GanttView activities={filtered} onRowClick={openEdit} canUpdate={canUpdate} />
         ) : (
-          <TableView activities={filtered} onEdit={openEdit} onDelete={handleDelete} />
+          <TableView activities={filtered} onEdit={openEdit} onDelete={handleDelete} canUpdate={canUpdate} canDelete={canDelete} />
         )}
       </div>
 
@@ -228,7 +243,13 @@ function Kpi({ label, value, icon, warn }: { label: string; value: string | numb
 
 // ---------------------------------------------------------------------------
 
-function GanttView({ activities, onRowClick }: { activities: Activity[]; onRowClick: (a: Activity) => void }) {
+function GanttView({
+  activities, onRowClick, canUpdate,
+}: {
+  activities: Activity[]
+  onRowClick: (a: Activity) => void
+  canUpdate: boolean
+}) {
   const { rangeStart, totalDays } = useMemo(() => {
     const dates = activities.flatMap((a) => [a.planned_start, a.planned_end, a.actual_start, a.actual_end].filter(Boolean) as string[])
     const start = dates.reduce((min, d) => (d < min ? d : min), dates[0])
@@ -250,7 +271,11 @@ function GanttView({ activities, onRowClick }: { activities: Activity[]; onRowCl
             <button
               key={a.id}
               onClick={() => onRowClick(a)}
-              className={`flex items-center w-full text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${i % 2 ? 'bg-gray-50/50' : ''}`}
+              disabled={!canUpdate}
+              title={canUpdate ? undefined : "Your role can't edit activities."}
+              className={`flex items-center w-full text-left border-b border-gray-100 last:border-b-0 transition-colors ${i % 2 ? 'bg-gray-50/50' : ''} ${
+                canUpdate ? 'hover:bg-gray-50' : 'cursor-not-allowed opacity-60'
+              }`}
             >
               <div className="w-56 flex-shrink-0 px-3 py-2.5 min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -287,11 +312,13 @@ function GanttView({ activities, onRowClick }: { activities: Activity[]; onRowCl
 // ---------------------------------------------------------------------------
 
 function TableView({
-  activities, onEdit, onDelete,
+  activities, onEdit, onDelete, canUpdate, canDelete,
 }: {
   activities: Activity[]
   onEdit: (a: Activity) => void
   onDelete: (id: string) => void
+  canUpdate: boolean
+  canDelete: boolean
 }) {
   return (
     <table className="w-full text-sm">
@@ -337,10 +364,20 @@ function TableView({
               <td className="px-4 py-2.5 text-gray-500 text-xs">{a.assignee ?? '—'}</td>
               <td className="px-4 py-2.5">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => onEdit(a)} className="p-1 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
+                  <button
+                    onClick={() => onEdit(a)}
+                    disabled={!canUpdate}
+                    title={canUpdate ? undefined : "Your role can't edit activities."}
+                    className="p-1 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600 disabled:hover:bg-transparent disabled:text-gray-200 disabled:cursor-not-allowed transition-colors"
+                  >
                     <Pencil size={13} />
                   </button>
-                  <button onClick={() => onDelete(a.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                  <button
+                    onClick={() => onDelete(a.id)}
+                    disabled={!canDelete}
+                    title={canDelete ? undefined : "Your role can't delete activities."}
+                    className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:hover:bg-transparent disabled:text-gray-200 disabled:cursor-not-allowed transition-colors"
+                  >
                     <Trash2 size={13} />
                   </button>
                 </div>

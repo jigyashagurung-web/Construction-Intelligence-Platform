@@ -8,6 +8,7 @@ import { BOQPage } from '@/pages/BOQPage'
 import { MaterialsPage } from '@/pages/MaterialsPage'
 import { ActivitySchedulePage } from '@/pages/ActivitySchedulePage'
 import { DailyProgressPage } from '@/pages/DailyProgressPage'
+import { TeamPage } from '@/pages/TeamPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <ProjectListPage /> },
+          { path: 'team', element: <TeamPage /> },
           { path: 'projects/:projectId', element: <ProjectDetailPage /> },
           { path: 'projects/:projectId/boq', element: <BOQPage /> },
           { path: 'projects/:projectId/materials', element: <MaterialsPage /> },

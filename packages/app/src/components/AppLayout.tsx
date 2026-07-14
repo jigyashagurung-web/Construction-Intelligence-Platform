@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, LogOut, HardHat } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, LogOut, HardHat, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { queryClient } from '@/lib/queryClient'
@@ -53,6 +53,21 @@ export function AppLayout() {
             <FolderOpen size={16} />
             All Projects
           </NavLink>
+          {profile?.role === 'admin' && (
+            <NavLink
+              to="/team"
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`
+              }
+            >
+              <Users size={16} />
+              Team
+            </NavLink>
+          )}
         </nav>
 
         {/* User strip */}
