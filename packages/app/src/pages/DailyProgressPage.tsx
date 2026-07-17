@@ -4,15 +4,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Loader2, NotebookPen, Pencil, Trash2, X,
   Users, Truck, AlertTriangle, ChevronDown, Cloud, CloudRain,
-  CloudFog, CloudLightning, Sun,
+  CloudFog, CloudLightning, Sun, Camera, Image as ImageIcon,
 } from 'lucide-react'
 import {
   fetchDailyProgress, createDailyProgressEntry, updateDailyProgressEntry, deleteDailyProgressEntry,
+  uploadDailyProgressPhoto, deleteDailyProgressPhoto, getProgressPhotoUrl,
 } from '@/api/dailyProgress'
 import { fetchActivities } from '@/api/activities'
 import { fetchProject } from '@/api/projects'
 import { fetchBOQItems } from '@/api/boq'
-import type { Activity, BOQItem, DailyProgressEntry, Weather } from '@/types'
+import type { Activity, BOQItem, DailyProgressEntry, DailyProgressPhoto, Weather } from '@/types'
 
 const WEATHER_OPTS: Weather[] = ['sunny', 'cloudy', 'rainy', 'stormy', 'foggy']
 
@@ -26,6 +27,18 @@ const WEATHER_CFG: Record<Weather, { label: string; icon: React.ReactNode }> = {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+interface EntryFormData {
+  activity_id: string
+  entry_date: string
+  weather?: Weather
+  labour_count: number
+  equipment_count: number
+  quantity_consumed: number
+  work_done: string
+  issues?: string
+  photoFiles: File[]
+}
+
 export function DailyProgressPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
@@ -34,6 +47,8 @@ export function DailyProgressPage() {
   const [activityFilter, setActivityFilter] = useState('All')
   const [dialog, setDialog]   = useState<'add' | 'edit' | null>(null)
   const [editing, setEditing] = useState<DailyProgressEntry | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
 
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
@@ -61,19 +76,48 @@ export function DailyProgressPage() {
 
   const createMut = useMutation({
     mutationFn: createDailyProgressEntry,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }); setDialog(null) },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }),
   })
 
   const updateMut = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Parameters<typeof updateDailyProgressEntry>[1] }) =>
       updateDailyProgressEntry(id, patch),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }); setDialog(null) },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }),
   })
 
   const deleteMut = useMutation({
     mutationFn: deleteDailyProgressEntry,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }),
   })
+
+  const deletePhotoMut = useMutation({
+    mutationFn: deleteDailyProgressPhoto,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daily_progress', projectId] }),
+  })
+
+  async function handleEntrySubmit(data: EntryFormData) {
+    const { photoFiles, ...patch } = data
+    setPhotoError(null)
+    const entry = dialog === 'edit' && editing
+      ? await updateMut.mutateAsync({ id: editing.id, patch })
+      : await createMut.mutateAsync({ project_id: projectId!, ...patch })
+
+    if (photoFiles.length > 0) {
+      setUploadingPhotos(true)
+      try {
+        for (const file of photoFiles) {
+          await uploadDailyProgressPhoto(projectId!, entry.id, file)
+        }
+        qc.invalidateQueries({ queryKey: ['daily_progress', projectId] })
+      } catch (err) {
+        setUploadingPhotos(false)
+        setPhotoError(err instanceof Error ? err.message : 'Failed to upload one or more photos.')
+        return // keep the dialog open so the error is visible and the user can retry
+      }
+      setUploadingPhotos(false)
+    }
+    setDialog(null)
+  }
 
   const filtered = entries.filter(
     (e) => activityFilter === 'All' || e.activity_id === activityFilter
@@ -170,6 +214,7 @@ export function DailyProgressPage() {
                 <th className="px-4 py-2.5 text-right w-28">Qty Consumed</th>
                 <th className="px-4 py-2.5 text-left">Work Done</th>
                 <th className="px-4 py-2.5 text-left">Issues</th>
+                <th className="px-4 py-2.5 text-left w-16">Photos</th>
                 <th className="px-4 py-2.5 w-16" />
               </tr>
             </thead>
@@ -196,6 +241,13 @@ export function DailyProgressPage() {
                     {e.issues ? <span className="text-red-500">{e.issues}</span> : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-2.5">
+                    {e.photos && e.photos.length > 0 ? (
+                      <PhotoCell photos={e.photos} />
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEdit(e)} className="p-1 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors">
                         <Pencil size={13} />
@@ -220,15 +272,10 @@ export function DailyProgressPage() {
           activities={activities}
           boqItems={boqItems}
           onClose={() => { setDialog(null); setEditing(null) }}
-          onSubmit={(data) => {
-            if (dialog === 'edit' && editing) {
-              updateMut.mutate({ id: editing.id, patch: data })
-            } else {
-              createMut.mutate({ project_id: projectId!, ...data })
-            }
-          }}
-          loading={createMut.isPending || updateMut.isPending}
-          error={createMut.error?.message ?? updateMut.error?.message ?? null}
+          onSubmit={handleEntrySubmit}
+          onDeletePhoto={(photo) => deletePhotoMut.mutate(photo)}
+          loading={createMut.isPending || updateMut.isPending || uploadingPhotos}
+          error={createMut.error?.message ?? updateMut.error?.message ?? photoError}
         />
       )}
     </div>
@@ -248,27 +295,40 @@ function Kpi({ label, value, icon, warn }: { label: string; value: string | numb
 
 // ---------------------------------------------------------------------------
 
+function PhotoCell({ photos }: { photos: DailyProgressPhoto[] }) {
+  const first = photos[0]
+  const { data: url } = useQuery({
+    queryKey: ['photo_url', first.id],
+    queryFn: () => getProgressPhotoUrl(first.storage_path),
+  })
+
+  return (
+    <div className="relative w-9 h-9 rounded border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+      {url ? <img src={url} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={13} className="text-gray-300" />}
+      {photos.length > 1 && (
+        <span className="absolute bottom-0 right-0 bg-gray-900/70 text-white text-[9px] px-1 rounded-tl">
+          +{photos.length - 1}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
 interface EntryDialogProps {
   mode: 'add' | 'edit'
   initial: DailyProgressEntry | null
   activities: Activity[]
   boqItems: BOQItem[]
   onClose: () => void
-  onSubmit: (data: {
-    activity_id: string
-    entry_date: string
-    weather?: Weather
-    labour_count: number
-    equipment_count: number
-    quantity_consumed: number
-    work_done: string
-    issues?: string
-  }) => void
+  onSubmit: (data: EntryFormData) => void
+  onDeletePhoto: (photo: DailyProgressPhoto) => void
   loading: boolean
   error: string | null
 }
 
-function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, loading, error }: EntryDialogProps) {
+function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, onDeletePhoto, loading, error }: EntryDialogProps) {
   const [activityId, setActivityId] = useState(initial?.activity_id ?? '')
   const [entryDate, setEntryDate]   = useState(initial?.entry_date ?? today())
   const [weather, setWeather]       = useState<Weather | ''>(initial?.weather ?? '')
@@ -277,9 +337,17 @@ function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, l
   const [quantityConsumed, setQuantityConsumed] = useState(String(initial?.quantity_consumed ?? ''))
   const [workDone, setWorkDone]     = useState(initial?.work_done ?? '')
   const [issues, setIssues]         = useState(initial?.issues ?? '')
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
 
   const selectedActivity = activities.find((a) => a.id === activityId)
   const consumptionUnit = boqItems.find((b) => b.id === selectedActivity?.boq_item_id)?.unit
+  const existingPhotos = initial?.photos ?? []
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : []
+    e.target.value = ''
+    if (files.length > 0) setPhotoFiles((prev) => [...prev, ...files])
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -292,6 +360,7 @@ function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, l
       quantity_consumed: Number(quantityConsumed),
       work_done: workDone,
       issues: issues || undefined,
+      photoFiles,
     })
   }
 
@@ -361,6 +430,42 @@ function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, l
             />
           </Field>
 
+          <Field label="Photos">
+            <label className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 cursor-pointer w-fit">
+              <Camera size={14} />
+              Attach photo(s)
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleFilesSelected} />
+            </label>
+            {(existingPhotos.length > 0 || photoFiles.length > 0) && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {existingPhotos.map((p) => (
+                  <div key={p.id} className="relative w-14 h-14 rounded border border-gray-200 overflow-hidden group/photo">
+                    <ExistingPhotoThumb photo={p} />
+                    <button
+                      type="button"
+                      onClick={() => onDeletePhoto(p)}
+                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+                {photoFiles.map((f, i) => (
+                  <div key={`${f.name}-${i}`} className="relative w-14 h-14 rounded border border-gray-200 overflow-hidden group/photo">
+                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Field>
+
           {error && (
             <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-3 py-2">{error}</p>
           )}
@@ -386,6 +491,16 @@ function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, l
       </div>
     </div>
   )
+}
+
+function ExistingPhotoThumb({ photo }: { photo: DailyProgressPhoto }) {
+  const { data: url } = useQuery({
+    queryKey: ['photo_url', photo.id],
+    queryFn: () => getProgressPhotoUrl(photo.storage_path),
+  })
+  return url
+    ? <img src={url} alt={photo.caption ?? ''} className="w-full h-full object-cover" />
+    : <div className="w-full h-full bg-gray-50 flex items-center justify-center"><Loader2 size={12} className="animate-spin text-gray-300" /></div>
 }
 
 const inp = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'

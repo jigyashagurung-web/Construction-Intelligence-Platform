@@ -126,12 +126,11 @@ export function ProjectDetailPage() {
           bg="bg-orange-50"
         />
         <ModuleCard
-          to="#"
+          to={`/projects/${projectId}/reports`}
           icon={<BarChart3 size={20} className="text-purple-600" />}
           title="Reports"
-          description="Cost summaries and progress reports — coming soon"
+          description="Daily/weekly/monthly rollups, S-curve, and progress photos"
           bg="bg-purple-50"
-          disabled
         />
       </div>
     </div>

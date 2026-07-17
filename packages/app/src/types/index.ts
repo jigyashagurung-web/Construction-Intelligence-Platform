@@ -77,6 +77,16 @@ export interface Activity {
 
 export type Weather = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'foggy'
 
+export interface DailyProgressPhoto {
+  id: string
+  entry_id: string
+  project_id: string
+  storage_path: string
+  caption: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface DailyProgressEntry {
   id: string
   project_id: string
@@ -92,6 +102,23 @@ export interface DailyProgressEntry {
   created_at: string
   updated_at: string
   activity?: Activity
+  photos?: DailyProgressPhoto[]
+}
+
+export interface DailyProgressRollup {
+  project_id: string
+  entry_date: string
+  quantity_consumed: number
+  labour_count: number
+  equipment_count: number
+  entries: number
+}
+
+export interface ProgressCurvePoint {
+  project_id: string
+  entry_date: string
+  planned_pct: number | null
+  actual_pct: number | null
 }
 
 export interface Material {
