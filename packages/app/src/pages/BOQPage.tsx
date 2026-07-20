@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Loader2, Search, Pencil, Trash2,
   X, ClipboardList, ChevronDown,
 } from 'lucide-react'
-import { fetchBOQItems, createBOQItem, updateBOQItem, deleteBOQItem } from '@/api/boq'
+import {
+  fetchBOQItems, createBOQItem, updateBOQItem, deleteBOQItem,
+  fetchBoqCodeCatalog, resolveBoqCodeAncestry,
+} from '@/api/boq'
 import { fetchProject } from '@/api/projects'
-import type { BOQItem, BOQStatus } from '@/types'
+import type { BOQItem, BOQStatus, BoqCodeCatalogEntry } from '@/types'
 
 const STATUS_OPTS: BOQStatus[] = ['active', 'omitted', 'variation', 'provisional']
 const STATUS_COLOR: Record<BOQStatus, string> = {
@@ -49,6 +52,12 @@ export function BOQPage() {
     queryKey: ['boq', projectId],
     queryFn: () => fetchBOQItems(projectId!),
     enabled: !!projectId,
+  })
+
+  const { data: codeCatalog = [] } = useQuery({
+    queryKey: ['boq-code-catalog'],
+    queryFn: fetchBoqCodeCatalog,
+    staleTime: Infinity,
   })
 
   const createMut = useMutation({
@@ -231,6 +240,7 @@ export function BOQPage() {
           mode={dialog}
           initial={editing}
           projectId={projectId!}
+          codeCatalog={codeCatalog}
           onClose={() => { setDialog(null); setEditing(null) }}
           onSubmit={(data) => {
             if (dialog === 'edit' && editing) {
@@ -253,6 +263,7 @@ interface BOQDialogProps {
   mode: 'add' | 'edit'
   initial: BOQItem | null
   projectId: string
+  codeCatalog: BoqCodeCatalogEntry[]
   onClose: () => void
   onSubmit: (data: {
     wbs_code?: string
@@ -267,8 +278,9 @@ interface BOQDialogProps {
   error: string | null
 }
 
-function BOQDialog({ mode, initial, onClose, onSubmit, loading, error }: BOQDialogProps) {
+function BOQDialog({ mode, initial, onClose, onSubmit, loading, error, codeCatalog }: BOQDialogProps) {
   const [wbs, setWbs]         = useState(initial?.wbs_code ?? '')
+  const [wbsOpen, setWbsOpen] = useState(false)
   const [desc, setDesc]       = useState(initial?.description ?? '')
   const [unit, setUnit]       = useState(initial?.unit ?? '')
   const [qty, setQty]         = useState(String(initial?.quantity ?? ''))
@@ -277,6 +289,29 @@ function BOQDialog({ mode, initial, onClose, onSubmit, loading, error }: BOQDial
   const [status, setStatus]   = useState<BOQStatus>(initial?.status ?? 'active')
 
   const amount = (Number(qty) || 0) * (Number(rate) || 0)
+
+  const lineItems = useMemo(
+    () => codeCatalog.filter((e) => e.level === 'line_item'),
+    [codeCatalog]
+  )
+
+  // Legacy BOQ items may hold free-text wbs_code values that predate the
+  // catalog — the picker only constrains NEW selections, it never blocks
+  // editing a row that already carries a non-catalog value.
+  const wbsMatches = useMemo(() => {
+    const q = wbs.trim().toLowerCase()
+    if (!q) return []
+    return lineItems
+      .filter((e) => {
+        const ancestry = resolveBoqCodeAncestry(e.code, codeCatalog)
+        const haystack = [e.code, e.description, e.revit_category, e.family_type, ...ancestry.map((a) => a.description)]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        return haystack.includes(q)
+      })
+      .slice(0, 8)
+  }, [wbs, lineItems, codeCatalog])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -304,7 +339,34 @@ function BOQDialog({ mode, initial, onClose, onSubmit, loading, error }: BOQDial
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <Field label="WBS Code">
-              <input className={inp} value={wbs} onChange={(e) => setWbs(e.target.value)} placeholder="1.1.2" />
+              <div className="relative">
+                <input
+                  className={inp}
+                  value={wbs}
+                  onChange={(e) => { setWbs(e.target.value); setWbsOpen(true) }}
+                  onFocus={() => setWbsOpen(true)}
+                  onBlur={() => setTimeout(() => setWbsOpen(false), 150)}
+                  placeholder="Search chapter, section, or code…"
+                  autoComplete="off"
+                />
+                {wbsOpen && wbsMatches.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-xs">
+                    {wbsMatches.map((m) => (
+                      <li key={m.code}>
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-blue-50"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setWbs(m.code); setWbsOpen(false) }}
+                        >
+                          <span className="font-mono text-gray-500">{m.code}</span>
+                          <span className="text-gray-800"> — {m.description}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </Field>
             <Field label="Trade">
               <select className={inp} value={trade} onChange={(e) => setTrade(e.target.value)}>

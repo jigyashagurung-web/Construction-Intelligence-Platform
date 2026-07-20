@@ -40,6 +40,7 @@ export type BOQStatus = 'active' | 'omitted' | 'variation' | 'provisional'
 export interface BOQItem {
   id: string
   project_id: string
+  /** References BoqCodeCatalogEntry.code (line_item level) for items created after the taxonomy rollout; may still hold legacy free text for older rows. */
   wbs_code: string | null
   description: string
   unit: string | null
@@ -49,6 +50,20 @@ export interface BOQItem {
   trade: string | null
   status: BOQStatus
   created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type BoqCodeLevel = 'chapter' | 'sub_chapter' | 'section' | 'line_item'
+
+export interface BoqCodeCatalogEntry {
+  code: string
+  parent_code: string | null
+  level: BoqCodeLevel
+  description: string
+  unit: string | null
+  revit_category: string | null
+  family_type: string | null
   created_at: string
   updated_at: string
 }

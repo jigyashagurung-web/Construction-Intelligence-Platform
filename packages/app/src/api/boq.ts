@@ -1,5 +1,28 @@
 import { supabase } from '@/lib/supabase'
-import type { BOQItem, BOQStatus } from '@/types'
+import type { BOQItem, BOQStatus, BoqCodeCatalogEntry } from '@/types'
+
+export async function fetchBoqCodeCatalog(): Promise<BoqCodeCatalogEntry[]> {
+  const { data, error } = await supabase
+    .from('boq_code_catalog')
+    .select('*')
+    .order('code', { ascending: true })
+  if (error) throw error
+  return data as BoqCodeCatalogEntry[]
+}
+
+export function resolveBoqCodeAncestry(
+  code: string,
+  catalog: BoqCodeCatalogEntry[]
+): BoqCodeCatalogEntry[] {
+  const byCode = new Map(catalog.map((e) => [e.code, e]))
+  const chain: BoqCodeCatalogEntry[] = []
+  let current = byCode.get(code)
+  while (current) {
+    chain.unshift(current)
+    current = current.parent_code ? byCode.get(current.parent_code) : undefined
+  }
+  return chain
+}
 
 export async function fetchBOQItems(projectId: string): Promise<BOQItem[]> {
   const { data, error } = await supabase
