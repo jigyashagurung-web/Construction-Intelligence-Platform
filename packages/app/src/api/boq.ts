@@ -41,7 +41,6 @@ export interface CreateBOQItemInput {
   unit?: string
   quantity: number
   unit_rate: number
-  trade?: string
   status?: BOQStatus
 }
 
@@ -54,6 +53,21 @@ export async function createBOQItem(input: CreateBOQItemInput): Promise<BOQItem>
     .single()
   if (error) throw error
   return data as BOQItem
+}
+
+export type CreateBOQItemsInput = Omit<CreateBOQItemInput, 'project_id'>
+
+export async function createBOQItems(
+  projectId: string,
+  items: CreateBOQItemsInput[]
+): Promise<BOQItem[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('boq_items')
+    .insert(items.map((item) => ({ ...item, project_id: projectId, created_by: user?.id })))
+    .select()
+  if (error) throw error
+  return data as BOQItem[]
 }
 
 export async function updateBOQItem(

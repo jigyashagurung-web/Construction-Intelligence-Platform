@@ -47,7 +47,11 @@ export interface BOQItem {
   quantity: number
   unit_rate: number
   amount: number
-  trade: string | null
+  /** Denormalized from boq_code_catalog by a DB trigger whenever wbs_code is set; null if wbs_code is absent or doesn't resolve to a line item. */
+  chapter: string | null
+  section: string | null
+  revit_category: string | null
+  family_type: string | null
   status: BOQStatus
   created_by: string | null
   created_at: string
