@@ -1,19 +1,12 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader2, MapPin, CalendarDays, DollarSign,
   ClipboardList, Package, BarChart3, GanttChartSquare, NotebookPen
 } from 'lucide-react'
 import { fetchProject } from '@/api/projects'
-import type { ProjectStatus } from '@/types'
-
-const STATUS_COLOR: Record<ProjectStatus, { bg: string; text: string; dot: string }> = {
-  planning:  { bg: 'bg-gray-100',    text: 'text-gray-700',  dot: 'bg-gray-400' },
-  active:    { bg: 'bg-green-100',   text: 'text-green-700', dot: 'bg-green-500' },
-  on_hold:   { bg: 'bg-yellow-100',  text: 'text-yellow-700',dot: 'bg-yellow-500' },
-  complete:  { bg: 'bg-blue-100',    text: 'text-blue-700',  dot: 'bg-blue-500' },
-  cancelled: { bg: 'bg-red-100',     text: 'text-red-600',   dot: 'bg-red-500' },
-}
+import { PROJECT_STATUS_COLOR } from '@/lib/projectStatus'
+import { ModuleCard } from '@/components/ModuleCard'
 
 const fmt = new Intl.NumberFormat('en-NP', { maximumFractionDigits: 0 })
 
@@ -46,7 +39,7 @@ export function ProjectDetailPage() {
     )
   }
 
-  const s = STATUS_COLOR[project.status]
+  const s = PROJECT_STATUS_COLOR[project.status]
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -135,36 +128,4 @@ export function ProjectDetailPage() {
       </div>
     </div>
   )
-}
-
-function ModuleCard({
-  to, icon, title, description, bg, disabled,
-}: {
-  to: string
-  icon: React.ReactNode
-  title: string
-  description: string
-  bg: string
-  disabled?: boolean
-}) {
-  const cls = `block p-5 rounded-xl border ${
-    disabled
-      ? 'border-gray-100 opacity-50 cursor-not-allowed'
-      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all group'
-  } bg-white`
-
-  const inner = (
-    <>
-      <div className={`w-10 h-10 rounded-lg ${bg} flex items-center justify-center mb-3`}>
-        {icon}
-      </div>
-      <h3 className={`font-medium text-sm text-gray-900 mb-1 ${disabled ? '' : 'group-hover:text-blue-600 transition-colors'}`}>
-        {title}
-      </h3>
-      <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
-    </>
-  )
-
-  if (disabled) return <div className={cls}>{inner}</div>
-  return <Link to={to} className={cls}>{inner}</Link>
 }
