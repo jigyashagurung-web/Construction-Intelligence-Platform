@@ -13,10 +13,8 @@ export async function fetchActivities(projectId: string): Promise<Activity[]> {
 
 export interface CreateActivityInput {
   project_id: string
-  boq_item_id?: string
-  wbs_code?: string
+  boq_item_id: string
   name: string
-  trade?: string
   planned_start: string
   planned_end: string
   actual_start?: string

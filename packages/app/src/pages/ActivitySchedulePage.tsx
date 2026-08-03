@@ -29,11 +29,6 @@ const STATUS_CFG: Record<ActivityStatus, { label: string; badge: string; bar: st
   complete:    { label: 'Complete',    badge: 'bg-green-100 text-green-700',  bar: 'bg-green-500' },
 }
 
-const TRADES = [
-  'Civil Works', 'Structural Steel', 'MEP', 'Finishing',
-  'Earthworks', 'Roads & Pavements', 'Plumbing', 'Electrical', 'General',
-]
-
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
 export function ActivitySchedulePage() {
@@ -46,7 +41,6 @@ export function ActivitySchedulePage() {
   const canDelete = !!profile && CAN_DELETE_ROLES.includes(profile.role)
 
   const [view, setView]           = useState<'gantt' | 'table'>('gantt')
-  const [tradeFilter, setTrade]   = useState('All')
   const [statusFilter, setStatus] = useState<'All' | ActivityStatus>('All')
   const [dialog, setDialog]       = useState<'add' | 'edit' | null>(null)
   const [editing, setEditing]     = useState<Activity | null>(null)
@@ -85,12 +79,9 @@ export function ActivitySchedulePage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['activities', projectId] }),
   })
 
-  const trades = ['All', ...Array.from(new Set(activities.map((a) => a.trade).filter(Boolean)))] as string[]
-  const filtered = activities.filter((a) => {
-    const matchTrade  = tradeFilter === 'All' || a.trade === tradeFilter
-    const matchStatus = statusFilter === 'All' || a.status === statusFilter
-    return matchTrade && matchStatus
-  })
+  const boqItemById = useMemo(() => new Map(boqItems.map((b) => [b.id, b])), [boqItems])
+
+  const filtered = activities.filter((a) => statusFilter === 'All' || a.status === statusFilter)
 
   const complete = activities.filter((a) => a.status === 'complete').length
   const onTrack  = activities.filter((a) => a.status === 'on_track').length
@@ -172,17 +163,6 @@ export function ActivitySchedulePage() {
 
           <div className="relative">
             <select
-              value={tradeFilter}
-              onChange={(e) => setTrade(e.target.value)}
-              className="appearance-none pl-3 pr-7 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {trades.map((t) => <option key={t}>{t}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-
-          <div className="relative">
-            <select
               value={statusFilter}
               onChange={(e) => setStatus(e.target.value as typeof statusFilter)}
               className="appearance-none pl-3 pr-7 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -209,9 +189,9 @@ export function ActivitySchedulePage() {
             </p>
           </div>
         ) : view === 'gantt' ? (
-          <GanttView activities={filtered} onRowClick={openEdit} canUpdate={canUpdate} />
+          <GanttView activities={filtered} boqItemById={boqItemById} onRowClick={openEdit} canUpdate={canUpdate} />
         ) : (
-          <TableView activities={filtered} onEdit={openEdit} onDelete={handleDelete} canUpdate={canUpdate} canDelete={canDelete} />
+          <TableView activities={filtered} boqItemById={boqItemById} onEdit={openEdit} onDelete={handleDelete} canUpdate={canUpdate} canDelete={canDelete} />
         )}
       </div>
 
@@ -252,9 +232,10 @@ function Kpi({ label, value, icon, warn }: { label: string; value: string | numb
 // ---------------------------------------------------------------------------
 
 function GanttView({
-  activities, onRowClick, canUpdate,
+  activities, boqItemById, onRowClick, canUpdate,
 }: {
   activities: Activity[]
+  boqItemById: Map<string, BOQItem>
   onRowClick: (a: Activity) => void
   canUpdate: boolean
 }) {
@@ -273,6 +254,7 @@ function GanttView({
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
         {activities.map((a, i) => {
           const cfg = STATUS_CFG[a.status]
+          const boq = boqItemById.get(a.boq_item_id)
           const planLeft  = (dayDiff(rangeStart, a.planned_start) / totalDays) * 100
           const planWidth = Math.max((dayDiff(a.planned_start, a.planned_end) / totalDays) * 100, 1)
           return (
@@ -290,7 +272,9 @@ function GanttView({
                   {a.is_critical && <span className="w-1 h-3 rounded bg-red-500 flex-shrink-0" />}
                   <p className="text-xs font-medium text-gray-900 truncate">{a.name}</p>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">{a.wbs_code ? `${a.wbs_code} · ` : ''}{a.trade ?? '—'}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+                  {boq ? `${boq.wbs_code ? `${boq.wbs_code} · ` : ''}${[boq.chapter, boq.section].filter(Boolean).join(' / ') || '—'}` : '—'}
+                </p>
               </div>
               <div className="flex-1 relative h-10 mx-3">
                 {todayPct != null && (
@@ -326,9 +310,10 @@ function GanttView({
 // ---------------------------------------------------------------------------
 
 function TableView({
-  activities, onEdit, onDelete, canUpdate, canDelete,
+  activities, boqItemById, onEdit, onDelete, canUpdate, canDelete,
 }: {
   activities: Activity[]
+  boqItemById: Map<string, BOQItem>
   onEdit: (a: Activity) => void
   onDelete: (id: string) => void
   canUpdate: boolean
@@ -340,7 +325,7 @@ function TableView({
         <tr className="text-xs text-gray-500 font-medium">
           <th className="px-4 py-2.5 text-left w-24">WBS</th>
           <th className="px-4 py-2.5 text-left">Activity</th>
-          <th className="px-4 py-2.5 text-left w-32">Trade</th>
+          <th className="px-4 py-2.5 text-left w-40">Chapter / Section</th>
           <th className="px-4 py-2.5 text-left w-28">Plan Start</th>
           <th className="px-4 py-2.5 text-left w-28">Plan End</th>
           <th className="px-4 py-2.5 text-left w-36">Progress</th>
@@ -352,16 +337,17 @@ function TableView({
       <tbody className="divide-y divide-gray-100">
         {activities.map((a) => {
           const cfg = STATUS_CFG[a.status]
+          const boq = boqItemById.get(a.boq_item_id)
           return (
             <tr key={a.id} className="hover:bg-gray-50 group">
-              <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{a.wbs_code ?? '—'}</td>
+              <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{boq?.wbs_code ?? '—'}</td>
               <td className="px-4 py-2.5 text-gray-800">
                 <div className="flex items-center gap-1.5">
                   {a.is_critical && <span className="w-1 h-3 rounded bg-red-500" />}
                   {a.name}
                 </div>
               </td>
-              <td className="px-4 py-2.5 text-gray-500 text-xs">{a.trade ?? '—'}</td>
+              <td className="px-4 py-2.5 text-gray-500 text-xs">{[boq?.chapter, boq?.section].filter(Boolean).join(' / ') || '—'}</td>
               <td className="px-4 py-2.5 text-gray-500 text-xs">{a.planned_start}</td>
               <td className="px-4 py-2.5 text-gray-500 text-xs">{a.planned_end}</td>
               <td className="px-4 py-2.5">
@@ -419,15 +405,12 @@ interface ActivityDialogProps {
   boqItems: BOQItem[]
   onClose: () => void
   onSubmit: (data: {
-    wbs_code?: string
     name: string
-    trade?: string
-    boq_item_id?: string
+    boq_item_id: string
     planned_start: string
     planned_end: string
     actual_start?: string
     actual_end?: string
-    progress?: number
     status: ActivityStatus
     is_critical: boolean
     assignee?: string
@@ -437,34 +420,30 @@ interface ActivityDialogProps {
 }
 
 function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, error }: ActivityDialogProps) {
-  const [wbs, setWbs]           = useState(initial?.wbs_code ?? '')
   const [name, setName]         = useState(initial?.name ?? '')
-  const [trade, setTrade]       = useState(initial?.trade ?? '')
   const [boqItemId, setBoqItemId] = useState(initial?.boq_item_id ?? '')
   const [plannedStart, setPlannedStart] = useState(initial?.planned_start ?? '')
   const [plannedEnd, setPlannedEnd]     = useState(initial?.planned_end ?? '')
   const [actualStart, setActualStart]   = useState(initial?.actual_start ?? '')
   const [actualEnd, setActualEnd]       = useState(initial?.actual_end ?? '')
-  const [progress, setProgress]         = useState(String(initial?.progress ?? '0'))
   const [status, setStatusVal]          = useState<ActivityStatus>(initial?.status ?? 'not_started')
   const [isCritical, setIsCritical]     = useState(initial?.is_critical ?? false)
   const [assignee, setAssignee]         = useState(initial?.assignee ?? '')
 
+  // Every activity requires a BOQ item link — progress always comes from
+  // the auto-calculation trigger (007_quantity_consumed.sql), never manual entry.
+  const canSubmit = !!boqItemId && !!name && !!plannedStart && !!plannedEnd
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSubmit) return
     onSubmit({
-      wbs_code: wbs || undefined,
       name,
-      trade: trade || undefined,
-      boq_item_id: boqItemId || undefined,
+      boq_item_id: boqItemId,
       planned_start: plannedStart,
       planned_end: plannedEnd,
       actual_start: actualStart || undefined,
       actual_end: actualEnd || undefined,
-      // Progress is derived automatically from logged Quantity Consumed for
-      // BOQ-linked activities (see 007_quantity_consumed.sql) — don't send a
-      // manual value that would stomp the trigger's computed number.
-      progress: boqItemId ? undefined : Number(progress),
       status,
       is_critical: isCritical,
       assignee: assignee || undefined,
@@ -482,32 +461,11 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="WBS Code">
-              <input className={inp} value={wbs} onChange={(e) => setWbs(e.target.value)} placeholder="1.1.2" />
-            </Field>
-            <Field label="Trade">
-              <select className={inp} value={trade} onChange={(e) => setTrade(e.target.value)}>
-                <option value="">— None —</option>
-                {TRADES.map((t) => <option key={t}>{t}</option>)}
-              </select>
-            </Field>
-          </div>
-
-          <Field label="BOQ Item">
-            <select className={inp} value={boqItemId} onChange={(e) => setBoqItemId(e.target.value)}>
-              <option value="">— None —</option>
-              {boqItems.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.wbs_code ? `${b.wbs_code} — ` : ''}{b.description} ({b.quantity} {b.unit ?? ''})
-                </option>
-              ))}
-            </select>
-            {boqItemId && (
-              <p className="text-xs text-gray-400 mt-1">
-                Linking a BOQ item makes Progress auto-calculated from logged Quantity Consumed.
-              </p>
-            )}
+          <Field label="BOQ Item *">
+            <BoqItemPicker boqItems={boqItems} value={boqItemId} onSelect={(id) => setBoqItemId(id ?? '')} />
+            <p className="text-xs text-gray-400 mt-1">
+              Progress is auto-calculated from logged Quantity Consumed against this item's quantity.
+            </p>
           </Field>
 
           <Field label="Activity name *">
@@ -540,19 +498,12 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
 
           <div className="grid grid-cols-3 gap-3">
             <Field label="Progress (%)">
-              {boqItemId ? (
-                <div
-                  className={`${inp} bg-gray-50 text-gray-500 flex items-center`}
-                  title="Auto-calculated from logged Quantity Consumed — not editable while a BOQ Item is linked."
-                >
-                  {initial?.boq_item_id === boqItemId ? initial.progress : 0}% (auto)
-                </div>
-              ) : (
-                <input
-                  type="number" min="0" max="100" className={inp}
-                  value={progress} onChange={(e) => setProgress(e.target.value)}
-                />
-              )}
+              <div
+                className={`${inp} bg-gray-50 text-gray-500 flex items-center`}
+                title="Auto-calculated from logged Quantity Consumed."
+              >
+                {initial?.boq_item_id === boqItemId ? initial.progress : 0}% (auto)
+              </div>
             </Field>
             <Field label="Status">
               <select className={inp} value={status} onChange={(e) => setStatusVal(e.target.value as ActivityStatus)}>
@@ -583,7 +534,8 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !canSubmit}
+              title={canSubmit ? undefined : 'Select a BOQ item to continue'}
               className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-sm text-white font-medium flex items-center justify-center gap-2 transition-colors"
             >
               {loading && <Loader2 size={13} className="animate-spin" />}
@@ -592,6 +544,82 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
           </div>
         </form>
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+interface BoqItemPickerProps {
+  boqItems: BOQItem[]
+  /** Currently selected BOQ item id, if any (controlled by the parent form). */
+  value?: string
+  /** Fires with a BOQ item id once one is picked, or undefined when cleared. */
+  onSelect: (id: string | undefined) => void
+}
+
+/** Searchable single-select over the project's existing BOQ items, replacing
+ * the old flat <select> — an activity links to an actual boq_items row (with
+ * its own resolved catalog code/quantity), not a boq_code_catalog code directly. */
+function BoqItemPicker({ boqItems, value, onSelect }: BoqItemPickerProps) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen]   = useState(false)
+
+  const selected = boqItems.find((b) => b.id === value)
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return boqItems
+    return boqItems.filter((b) => `${b.wbs_code ?? ''} ${b.description}`.toLowerCase().includes(q))
+  }, [query, boqItems])
+
+  if (selected) {
+    return (
+      <div className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+        <div className="min-w-0">
+          <p className="text-xs font-mono text-gray-500">{selected.wbs_code ?? '—'}</p>
+          <p className="text-sm text-gray-800 truncate">{selected.description}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect(undefined)}
+          className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+          aria-label="Clear selected BOQ item"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <input
+        className={inp}
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Search BOQ items by WBS code or description…"
+        autoComplete="off"
+      />
+      {open && matches.length > 0 && (
+        <ul className="absolute z-10 mt-1 w-full max-h-64 overflow-auto bg-white border border-gray-200 rounded-lg shadow-lg text-xs">
+          {matches.map((b) => (
+            <li key={b.id}>
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-blue-50"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onSelect(b.id); setQuery(''); setOpen(false) }}
+              >
+                <span className="font-mono text-gray-500">{b.wbs_code ?? '—'}</span>
+                <span className="text-gray-800"> — {b.description} ({b.quantity} {b.unit ?? ''})</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

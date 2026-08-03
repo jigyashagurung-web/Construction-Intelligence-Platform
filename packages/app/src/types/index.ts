@@ -77,10 +77,8 @@ export type ActivityStatus = 'not_started' | 'on_track' | 'at_risk' | 'delayed' 
 export interface Activity {
   id: string
   project_id: string
-  boq_item_id: string | null
-  wbs_code: string | null
+  boq_item_id: string
   name: string
-  trade: string | null
   planned_start: string
   planned_end: string
   actual_start: string | null
