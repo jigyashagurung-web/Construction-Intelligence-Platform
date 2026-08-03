@@ -425,13 +425,11 @@ interface ImportSummary {
 
 const IMPORT_STATUS_LABEL: Record<BoqImportRowStatus, string> = {
   matched: 'Matched',
-  unmatched: 'Unmatched',
   invalid: 'Invalid',
 }
 
 const IMPORT_STATUS_COLOR: Record<BoqImportRowStatus, string> = {
   matched: 'bg-green-100 text-green-700',
-  unmatched: 'bg-yellow-100 text-yellow-700',
   invalid: 'bg-red-100 text-red-700',
 }
 
@@ -456,10 +454,9 @@ function BOQBulkImportDialog({ projectId, codeCatalog, onClose }: BOQBulkImportD
 
   const counts = useMemo(() => {
     const matched    = rows.filter((r) => r.status === 'matched').length
-    const unmatched  = rows.filter((r) => r.status === 'unmatched').length
     const invalid    = rows.filter((r) => r.status === 'invalid').length
     const importable = rows.filter((r) => !r.excluded && r.item).length
-    return { matched, unmatched, invalid, importable }
+    return { matched, invalid, importable }
   }, [rows])
 
   function downloadTemplate() {
@@ -569,7 +566,6 @@ function BOQBulkImportDialog({ projectId, codeCatalog, onClose }: BOQBulkImportD
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-xs">
                 <span className="text-green-700 font-medium">{counts.matched} matched</span>
-                <span className="text-yellow-700 font-medium">{counts.unmatched} unmatched</span>
                 <span className="text-red-700 font-medium">{counts.invalid} invalid</span>
                 <span className="text-gray-500">
                   &mdash; {counts.importable} row{counts.importable !== 1 ? 's' : ''} will be imported

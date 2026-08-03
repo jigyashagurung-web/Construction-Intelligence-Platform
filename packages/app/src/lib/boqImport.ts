@@ -65,7 +65,7 @@ export function generateBoqImportTemplate(): Blob {
   return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 }
 
-export type BoqImportRowStatus = 'matched' | 'unmatched' | 'invalid'
+export type BoqImportRowStatus = 'matched' | 'invalid'
 
 export interface BoqImportValidatedRow {
   raw: BoqImportRawRow
@@ -102,19 +102,18 @@ export function validateBoqImportRow(
     }
   }
 
-  const wbsCode = raw.wbsCode.trim() || undefined
-  let codeWarning: string | null = null
+  const wbsCode = raw.wbsCode.trim()
   let matchedEntry: BoqCodeCatalogEntry | undefined
-  if (wbsCode) {
+  if (!wbsCode) {
+    reasons.push('WBS Code is required')
+  } else {
     const entry = catalog.find((e) => e.code === wbsCode)
-    if (entry) {
-      if (entry.level !== 'line_item') {
-        reasons.push(`WBS Code "${wbsCode}" is a ${entry.level} code; only line-item codes can be assigned`)
-      } else {
-        matchedEntry = entry
-      }
+    if (!entry) {
+      reasons.push(`WBS Code "${wbsCode}" does not match any catalog entry`)
+    } else if (entry.level !== 'line_item') {
+      reasons.push(`WBS Code "${wbsCode}" is a ${entry.level} code; only line-item codes can be assigned`)
     } else {
-      codeWarning = `WBS Code "${wbsCode}" does not match any catalog entry; item will be imported without a WBS code`
+      matchedEntry = entry
     }
   }
 
@@ -124,15 +123,13 @@ export function validateBoqImportRow(
 
   return {
     raw,
-    status: codeWarning ? 'unmatched' : 'matched',
-    reasons: codeWarning ? [codeWarning] : [],
+    status: 'matched',
+    reasons: [],
     item: {
-      // boq_items.wbs_code has a foreign key to boq_code_catalog.code, so an
-      // unmatched code can't be persisted — the item is imported without one.
-      wbs_code: codeWarning ? undefined : wbsCode,
       // A matched code's description always reflects the catalog, same as manual entry.
-      description: matchedEntry ? matchedEntry.description : raw.description.trim(),
-      unit: (matchedEntry ? matchedEntry.unit : raw.unit.trim()) || undefined,
+      wbs_code: matchedEntry!.code,
+      description: matchedEntry!.description,
+      unit: matchedEntry!.unit ?? undefined,
       quantity,
       unit_rate: unitRate,
       status,

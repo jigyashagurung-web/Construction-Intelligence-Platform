@@ -1,17 +1,4 @@
-# boq-bulk-import
-
-## Purpose
-
-Bulk importing BOQ items into a project from a spreadsheet (CSV/XLSX), with client-side parsing, validation against the `boq_code_catalog`, a correctable preview step, and a single batched commit of valid rows.
-
-## Requirements
-
-### Requirement: Bulk import entry point
-The BOQ page SHALL provide a "Bulk Import" action alongside the existing "Add Item" action that opens an import dialog for the current project.
-
-#### Scenario: Opening the import dialog
-- **WHEN** a user on the BOQ page clicks "Bulk Import"
-- **THEN** an import dialog opens scoped to the current project
+## MODIFIED Requirements
 
 ### Requirement: Downloadable import template
 The system SHALL provide a downloadable CSV template with columns WBS Code, Description, Quantity, Unit, Unit Rate, Status.
@@ -19,21 +6,6 @@ The system SHALL provide a downloadable CSV template with columns WBS Code, Desc
 #### Scenario: Downloading the template
 - **WHEN** a user clicks the template download control in the import dialog
 - **THEN** a CSV file is downloaded containing a header row with exactly those columns in that order
-
-### Requirement: File upload and parsing
-The system SHALL accept an uploaded CSV or XLSX file and parse it client-side into rows before any data is sent to the server.
-
-#### Scenario: Uploading a valid CSV file
-- **WHEN** a user uploads a CSV file matching the template columns
-- **THEN** the system parses it into a list of candidate rows and advances to the preview step
-
-#### Scenario: Uploading a valid XLSX file
-- **WHEN** a user uploads an XLSX file with a first sheet matching the template columns
-- **THEN** the system parses the first sheet into a list of candidate rows and advances to the preview step
-
-#### Scenario: Uploading an unparseable file
-- **WHEN** a user uploads a file that is not a valid CSV or XLSX (e.g. corrupt or wrong format)
-- **THEN** the system shows an error and does not advance to the preview step
 
 ### Requirement: Row validation against the BOQ code catalog
 The system SHALL validate each parsed row's WBS Code against `boq_code_catalog` and classify the row as matched or invalid. A row whose WBS Code does not resolve to a `line_item`-level catalog entry SHALL be invalid and SHALL NOT be imported as free text.
@@ -75,21 +47,3 @@ Before any data is written, the system SHALL show a preview table listing every 
 #### Scenario: Excluding a row from import
 - **WHEN** a user marks a row to be skipped
 - **THEN** that row is excluded from the import regardless of its validation status
-
-### Requirement: Bulk commit of valid rows
-The system SHALL insert only rows that are not invalid and not excluded, as `boq_items` scoped to the current project, in a single batched request.
-
-#### Scenario: Committing an import with a mix of valid and invalid rows
-- **WHEN** a user confirms the import and the preview contains both valid and invalid rows
-- **THEN** only the valid, non-excluded rows are sent to the server as new `boq_items` for the current project, and invalid rows are not sent
-
-#### Scenario: Import rejected by server-side constraints
-- **WHEN** the batched insert is rejected by the database (e.g. an RLS or trigger violation not caught client-side)
-- **THEN** no rows from that batch are created, and the system surfaces the error to the user without losing the preview state
-
-### Requirement: Import summary
-After a bulk insert attempt, the system SHALL show a summary of how many rows were created and how many were skipped, with reasons for skipped rows.
-
-#### Scenario: Successful import with some rows skipped
-- **WHEN** a bulk insert completes and some rows were excluded or were invalid
-- **THEN** the summary reports the count of rows created and the count of rows skipped, each skipped row annotated with its reason
