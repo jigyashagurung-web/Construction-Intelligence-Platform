@@ -91,13 +91,6 @@ export function ProjectDetailPage() {
       {/* Module cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ModuleCard
-          to={`/projects/${projectId}/schedule`}
-          icon={<GanttChartSquare size={20} className="text-indigo-600" />}
-          title="Activity Schedule"
-          description="Gantt view, baseline vs actual, critical path"
-          bg="bg-indigo-50"
-        />
-        <ModuleCard
           to={`/projects/${projectId}/boq`}
           icon={<ClipboardList size={20} className="text-blue-600" />}
           title="Bill of Quantities"
@@ -110,6 +103,13 @@ export function ProjectDetailPage() {
           title="Materials"
           description="Track stock, record GRNs, and manage issues"
           bg="bg-green-50"
+        />
+        <ModuleCard
+          to={`/projects/${projectId}/schedule`}
+          icon={<GanttChartSquare size={20} className="text-indigo-600" />}
+          title="Activity Schedule"
+          description="Gantt view, baseline vs actual, critical path"
+          bg="bg-indigo-50"
         />
         <ModuleCard
           to={`/projects/${projectId}/progress`}
