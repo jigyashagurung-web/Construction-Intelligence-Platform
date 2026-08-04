@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { DailyProgressPhoto, DailyProgressRollup, ProgressCurvePoint } from '@/types'
+import type { DailyProgressPhoto, DailyProgressRollup, ProgressCurvePoint, ProjectEvm } from '@/types'
 
 export interface DateRange {
   from: string
@@ -33,6 +33,16 @@ export async function fetchProgressCurve(projectId: string): Promise<ProgressCur
     .order('entry_date', { ascending: true })
   if (error) throw error
   return data as ProgressCurvePoint[]
+}
+
+export async function fetchProjectEvm(projectId: string): Promise<ProjectEvm> {
+  const { data, error } = await supabase
+    .from('v_project_evm')
+    .select('*')
+    .eq('project_id', projectId)
+    .single()
+  if (error) throw error
+  return data as ProjectEvm
 }
 
 export interface ProgressPhotoFilters {

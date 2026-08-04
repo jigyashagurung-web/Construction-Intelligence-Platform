@@ -138,6 +138,18 @@ export interface ProgressCurvePoint {
   actual_pct: number | null
 }
 
+/** Raw EVM aggregates for a project, as of the current date. Derived ratios
+ * (SV/SPI/CV/CPI/EAC/VAC) are computed client-side — see computeEvmMetrics. */
+export interface ProjectEvm {
+  project_id: string
+  bac: number
+  total_active_boq_amount: number
+  pv: number
+  ev: number
+  ac: number
+  unlinked_activity_count: number
+}
+
 export interface Material {
   id: string
   org_id: string

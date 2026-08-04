@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader2, BarChart3, TrendingUp, Image as ImageIcon, ChevronDown, AlertTriangle,
+  Wallet, CheckCircle2, XCircle,
 } from 'lucide-react'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -10,14 +11,18 @@ import {
 } from 'recharts'
 import { fetchProject } from '@/api/projects'
 import { fetchActivities } from '@/api/activities'
-import { fetchDailyRollup, fetchProgressCurve, fetchProgressPhotos } from '@/api/reports'
+import { fetchDailyRollup, fetchProgressCurve, fetchProgressPhotos, fetchProjectEvm } from '@/api/reports'
 import { getProgressPhotoUrl } from '@/api/dailyProgress'
+import { computeEvmMetrics } from '@/lib/evm'
 import type { DailyProgressRollup } from '@/types'
 
 type ProgressPhotoWithEntry = Awaited<ReturnType<typeof fetchProgressPhotos>>[number]
 
-type Tab = 'summary' | 'scurve' | 'photos'
+type Tab = 'summary' | 'scurve' | 'evm' | 'photos'
 type Granularity = 'day' | 'week' | 'month'
+
+const fmtAmt = new Intl.NumberFormat('en-NP', { maximumFractionDigits: 0 })
+const money = (n: number) => `NPR ${fmtAmt.format(n)}`
 
 const today = () => new Date().toISOString().slice(0, 10)
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
@@ -79,6 +84,7 @@ export function ReportsPage() {
           {([
             { v: 'summary' as const, icon: <BarChart3 size={14} />, label: 'Summary' },
             { v: 'scurve' as const, icon: <TrendingUp size={14} />, label: 'S-curve' },
+            { v: 'evm' as const, icon: <Wallet size={14} />, label: 'Earned Value' },
             { v: 'photos' as const, icon: <ImageIcon size={14} />, label: 'Photos' },
           ]).map(({ v, icon, label }) => (
             <button
@@ -97,6 +103,7 @@ export function ReportsPage() {
       <div className="flex-1 overflow-auto">
         {tab === 'summary' && projectId && <SummaryTab projectId={projectId} />}
         {tab === 'scurve' && projectId && <SCurveTab projectId={projectId} />}
+        {tab === 'evm' && projectId && <EvmTab projectId={projectId} />}
         {tab === 'photos' && projectId && <PhotosTab projectId={projectId} />}
       </div>
     </div>
@@ -242,6 +249,121 @@ function SCurveTab({ projectId }: { projectId: string }) {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+function EvmTab({ projectId }: { projectId: string }) {
+  const { data: evm, isLoading } = useQuery({
+    queryKey: ['project_evm', projectId],
+    queryFn: () => fetchProjectEvm(projectId),
+  })
+
+  if (isLoading) {
+    return <div className="flex justify-center py-16"><Loader2 size={22} className="animate-spin text-gray-400" /></div>
+  }
+
+  if (!evm || evm.bac === 0) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          icon={<Wallet size={36} className="text-gray-200" />}
+          label="No BOQ-linked activities yet — earned value can't be computed until at least one activity is linked to a priced BOQ item."
+        />
+      </div>
+    )
+  }
+
+  const m = computeEvmMetrics(evm)
+  const onSchedule = m.spi === null ? null : m.spi >= 1
+  const onBudget = m.cpi === null ? null : m.cpi >= 1
+  const ratio = (n: number | null) => (n === null ? 'N/A' : n.toFixed(2))
+
+  return (
+    <div className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <StatusBanner
+          ok={onSchedule}
+          okLabel="On schedule"
+          badLabel="Behind schedule"
+          unknownLabel="Not started"
+          detail={`SPI ${ratio(m.spi)}`}
+        />
+        <StatusBanner
+          ok={onBudget}
+          okLabel="On budget"
+          badLabel="Over budget"
+          unknownLabel="No material cost logged yet"
+          detail={`CPI (materials only) ${ratio(m.cpi)}`}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        <StatCard label="BAC" value={money(evm.bac)} />
+        <StatCard label="Planned Value" value={money(evm.pv)} />
+        <StatCard label="Earned Value" value={money(evm.ev)} />
+        <StatCard label="Actual Cost (materials only)" value={money(evm.ac)} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        <StatCard label="Schedule Variance" value={money(m.sv)} warn={m.sv < 0} />
+        <StatCard label="SPI" value={ratio(m.spi)} warn={m.spi !== null && m.spi < 1} />
+        <StatCard label="Cost Variance (materials only)" value={money(m.cv)} warn={m.cv < 0} />
+        <StatCard label="CPI (materials only)" value={ratio(m.cpi)} warn={m.cpi !== null && m.cpi < 1} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <StatCard label="Estimate at Completion (materials only)" value={m.eac === null ? 'N/A' : money(m.eac)} />
+        <StatCard label="Variance at Completion (materials only)" value={m.vac === null ? 'N/A' : money(m.vac)} warn={m.vac !== null && m.vac < 0} />
+      </div>
+
+      {(m.unscheduledAmount > 0 || evm.unlinked_activity_count > 0) && (
+        <div className="flex items-start gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+          <AlertTriangle size={13} className="text-gray-400 flex-shrink-0 mt-0.5" />
+          <div>
+            {m.unscheduledAmount > 0 && <p>{money(m.unscheduledAmount)} of BOQ budget has no linked activity yet, so it's excluded from BAC/PV/EV above.</p>}
+            {evm.unlinked_activity_count > 0 && <p>{evm.unlinked_activity_count} activit{evm.unlinked_activity_count !== 1 ? 'ies have' : 'y has'} no linked BOQ item and {evm.unlinked_activity_count !== 1 ? 'are' : 'is'} similarly excluded.</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatusBanner({
+  ok, okLabel, badLabel, unknownLabel, detail,
+}: {
+  ok: boolean | null
+  okLabel: string
+  badLabel: string
+  unknownLabel: string
+  detail: string
+}) {
+  const state = ok === null ? 'unknown' : ok ? 'ok' : 'bad'
+  const cfg = {
+    ok:      { bg: 'bg-green-50 border-green-100', text: 'text-green-700', icon: <CheckCircle2 size={16} className="text-green-600" />, label: okLabel },
+    bad:     { bg: 'bg-red-50 border-red-100',     text: 'text-red-700',   icon: <XCircle size={16} className="text-red-600" />,        label: badLabel },
+    unknown: { bg: 'bg-gray-50 border-gray-100',   text: 'text-gray-500',  icon: <AlertTriangle size={16} className="text-gray-400" />, label: unknownLabel },
+  }[state]
+
+  return (
+    <div className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 ${cfg.bg}`}>
+      {cfg.icon}
+      <div>
+        <p className={`text-sm font-semibold ${cfg.text}`}>{cfg.label}</p>
+        <p className="text-xs text-gray-400">{detail}</p>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-3">
+      <p className="text-[11px] text-gray-500 mb-1">{label}</p>
+      <p className={`text-base font-semibold ${warn ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
     </div>
   )
 }

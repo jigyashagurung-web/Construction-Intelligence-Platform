@@ -2,9 +2,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader2, MapPin, CalendarDays, DollarSign,
-  ClipboardList, Package, BarChart3, GanttChartSquare, NotebookPen
+  ClipboardList, Package, BarChart3, GanttChartSquare, NotebookPen,
+  CheckCircle2, XCircle,
 } from 'lucide-react'
 import { fetchProject } from '@/api/projects'
+import { fetchProjectEvm } from '@/api/reports'
+import { computeEvmMetrics } from '@/lib/evm'
 import { PROJECT_STATUS_COLOR } from '@/lib/projectStatus'
 import { ModuleCard } from '@/components/ModuleCard'
 
@@ -17,6 +20,12 @@ export function ProjectDetailPage() {
   const { data: project, isLoading, error } = useQuery({
     queryKey: ['project', projectId],
     queryFn: () => fetchProject(projectId!),
+    enabled: !!projectId,
+  })
+
+  const { data: evm } = useQuery({
+    queryKey: ['project_evm', projectId],
+    queryFn: () => fetchProjectEvm(projectId!),
     enabled: !!projectId,
   })
 
@@ -40,6 +49,7 @@ export function ProjectDetailPage() {
   }
 
   const s = PROJECT_STATUS_COLOR[project.status]
+  const m = evm && evm.bac > 0 ? computeEvmMetrics(evm) : null
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -61,6 +71,12 @@ export function ProjectDetailPage() {
               <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
               {project.status.replace('_', ' ')}
             </span>
+            {m && (
+              <>
+                <EvmBadge ok={m.spi === null ? null : m.spi >= 1} okLabel="On schedule" badLabel="Behind schedule" />
+                <EvmBadge ok={m.cpi === null ? null : m.cpi >= 1} okLabel="On budget" badLabel="Over budget" title="Based on material cost only" />
+              </>
+            )}
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
           {project.description && (
@@ -127,5 +143,29 @@ export function ProjectDetailPage() {
         />
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+function EvmBadge({
+  ok, okLabel, badLabel, title,
+}: {
+  ok: boolean | null
+  okLabel: string
+  badLabel: string
+  title?: string
+}) {
+  if (ok === null) return null
+  const Icon = ok ? CheckCircle2 : XCircle
+  const cls = ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium ${cls}`}
+    >
+      <Icon size={11} />
+      {ok ? okLabel : badLabel}
+    </span>
   )
 }
