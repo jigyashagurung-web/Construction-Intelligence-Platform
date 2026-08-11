@@ -74,6 +74,8 @@ export interface BoqCodeCatalogEntry {
 
 export type ActivityStatus = 'not_started' | 'on_track' | 'at_risk' | 'delayed' | 'complete'
 
+export type ActualEndSource = 'derived' | 'manual'
+
 export interface Activity {
   id: string
   project_id: string
@@ -81,8 +83,12 @@ export interface Activity {
   name: string
   planned_start: string
   planned_end: string
+  /** Read-only — derived from Daily Log entries (earliest entry_date). Not settable via create/update. */
   actual_start: string | null
+  /** Read-only — derived from Daily Log entries, or stamped on manual completion. Not settable via create/update. */
   actual_end: string | null
+  /** Present only when actual_end is set: 'derived' from diary quantity math, or 'manual' from a completion stamp. */
+  actual_end_source: ActualEndSource | null
   progress: number
   status: ActivityStatus
   is_critical: boolean

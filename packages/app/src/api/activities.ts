@@ -17,8 +17,6 @@ export interface CreateActivityInput {
   name: string
   planned_start: string
   planned_end: string
-  actual_start?: string
-  actual_end?: string
   progress?: number
   status?: ActivityStatus
   is_critical?: boolean
@@ -38,7 +36,7 @@ export async function createActivity(input: CreateActivityInput): Promise<Activi
 
 export async function updateActivity(
   id: string,
-  patch: Partial<Omit<Activity, 'id' | 'project_id' | 'created_at' | 'updated_at'>>
+  patch: Partial<Omit<Activity, 'id' | 'project_id' | 'created_at' | 'updated_at' | 'actual_start' | 'actual_end' | 'actual_end_source'>>
 ): Promise<Activity> {
   const { data, error } = await supabase
     .from('activities')

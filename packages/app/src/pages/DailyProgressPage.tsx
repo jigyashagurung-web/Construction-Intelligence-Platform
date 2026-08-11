@@ -376,7 +376,7 @@ function EntryDialog({ mode, initial, activities, boqItems, onClose, onSubmit, o
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Date *">
+            <Field label="Date *" hint="The day the work happened — not the day you're filling this in. Logging for a missed day? Pick that day's date.">
               <input type="date" className={inp} value={entryDate} onChange={(e) => setEntryDate(e.target.value)} required />
             </Field>
             <Field label="Activity *">
@@ -505,10 +505,17 @@ function ExistingPhotoThumb({ photo }: { photo: DailyProgressPhoto }) {
 
 const inp = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+        {label}
+        {hint && (
+          <span title={hint} className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-gray-200 text-gray-500 text-[9px] font-semibold cursor-help">
+            ?
+          </span>
+        )}
+      </label>
       {children}
     </div>
   )

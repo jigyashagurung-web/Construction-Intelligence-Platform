@@ -31,6 +31,18 @@ const STATUS_CFG: Record<ActivityStatus, { label: string; badge: string; bar: st
 
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
+// Actual dates are derived from the Daily Log (see 018_activity_actual_dates_derived.sql),
+// except when actual_end_source is 'manual' — stamped when an activity is marked complete
+// ahead of (or without) a diary-derived completion date.
+function actualDateTooltip(a: Activity): string {
+  const start = a.actual_start ?? '—'
+  if (!a.actual_end) return `Actual: ${start} → not yet complete`
+  const suffix = a.actual_end_source === 'manual'
+    ? 'set manually on completion'
+    : 'derived from logs — may shift if diary entries change'
+  return `Actual: ${start} → ${a.actual_end} (${suffix})`
+}
+
 export function ActivitySchedulePage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
@@ -283,6 +295,7 @@ function GanttView({
                 <div
                   className="absolute top-1/2 -translate-y-1/2 h-4 rounded bg-gray-100 border border-gray-200"
                   style={{ left: `${planLeft}%`, width: `${planWidth}%` }}
+                  title={actualDateTooltip(a)}
                 >
                   <div
                     className={`h-full rounded-l ${a.status === 'not_started' ? 'bg-gray-300' : cfg.bar}`}
@@ -328,6 +341,8 @@ function TableView({
           <th className="px-4 py-2.5 text-left w-40">Chapter / Section</th>
           <th className="px-4 py-2.5 text-left w-28">Plan Start</th>
           <th className="px-4 py-2.5 text-left w-28">Plan End</th>
+          <th className="px-4 py-2.5 text-left w-28">Actual Start</th>
+          <th className="px-4 py-2.5 text-left w-32">Actual End</th>
           <th className="px-4 py-2.5 text-left w-36">Progress</th>
           <th className="px-4 py-2.5 text-left w-28">Status</th>
           <th className="px-4 py-2.5 text-left w-32">Assignee</th>
@@ -350,6 +365,32 @@ function TableView({
               <td className="px-4 py-2.5 text-gray-500 text-xs">{[boq?.chapter, boq?.section].filter(Boolean).join(' / ') || '—'}</td>
               <td className="px-4 py-2.5 text-gray-500 text-xs">{a.planned_start}</td>
               <td className="px-4 py-2.5 text-gray-500 text-xs">{a.planned_end}</td>
+              <td className="px-4 py-2.5 text-gray-500 text-xs" title={a.actual_start ? 'Derived from Daily Log entries' : undefined}>
+                {a.actual_start ?? '—'}
+              </td>
+              <td className="px-4 py-2.5 text-xs">
+                {a.actual_end ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-gray-500"
+                    title={
+                      a.actual_end_source === 'manual'
+                        ? 'Set manually on completion'
+                        : 'Derived from logs — may adjust if diary entries are added or edited later'
+                    }
+                  >
+                    {a.actual_end}
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        a.actual_end_source === 'manual' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {a.actual_end_source === 'manual' ? 'manual' : 'derived'}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-gray-300">—</span>
+                )}
+              </td>
               <td className="px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -409,8 +450,6 @@ interface ActivityDialogProps {
     boq_item_id: string
     planned_start: string
     planned_end: string
-    actual_start?: string
-    actual_end?: string
     status: ActivityStatus
     is_critical: boolean
     assignee?: string
@@ -424,8 +463,6 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
   const [boqItemId, setBoqItemId] = useState(initial?.boq_item_id ?? '')
   const [plannedStart, setPlannedStart] = useState(initial?.planned_start ?? '')
   const [plannedEnd, setPlannedEnd]     = useState(initial?.planned_end ?? '')
-  const [actualStart, setActualStart]   = useState(initial?.actual_start ?? '')
-  const [actualEnd, setActualEnd]       = useState(initial?.actual_end ?? '')
   const [status, setStatusVal]          = useState<ActivityStatus>(initial?.status ?? 'not_started')
   const [isCritical, setIsCritical]     = useState(initial?.is_critical ?? false)
   const [assignee, setAssignee]         = useState(initial?.assignee ?? '')
@@ -442,8 +479,6 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
       boq_item_id: boqItemId,
       planned_start: plannedStart,
       planned_end: plannedEnd,
-      actual_start: actualStart || undefined,
-      actual_end: actualEnd || undefined,
       status,
       is_critical: isCritical,
       assignee: assignee || undefined,
@@ -487,14 +522,41 @@ function ActivityDialog({ mode, initial, boqItems, onClose, onSubmit, loading, e
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Actual start">
-              <input type="date" className={inp} value={actualStart} onChange={(e) => setActualStart(e.target.value)} />
-            </Field>
-            <Field label="Actual end">
-              <input type="date" className={inp} value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} />
-            </Field>
-          </div>
+          {mode === 'edit' && initial && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Actual start">
+                <div
+                  className={`${inp} bg-gray-50 text-gray-500 flex items-center`}
+                  title={initial.actual_start ? 'Derived from Daily Log entries' : undefined}
+                >
+                  {initial.actual_start ?? '—'}
+                </div>
+              </Field>
+              <Field label="Actual end">
+                <div
+                  className={`${inp} bg-gray-50 text-gray-500 flex items-center gap-1.5`}
+                  title={
+                    initial.actual_end
+                      ? initial.actual_end_source === 'manual'
+                        ? 'Set manually on completion'
+                        : 'Derived from logs — may adjust if diary entries are added or edited later'
+                      : undefined
+                  }
+                >
+                  {initial.actual_end ?? '—'}
+                  {initial.actual_end && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        initial.actual_end_source === 'manual' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {initial.actual_end_source === 'manual' ? 'manual' : 'derived'}
+                    </span>
+                  )}
+                </div>
+              </Field>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <Field label="Progress (%)">
